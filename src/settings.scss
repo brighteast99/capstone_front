@@ -1,0 +1,12 @@
+@use "vuetify/settings" with (
+  $button-height: 42px,
+  $list-item-padding: 0px 16px,
+  $list-item-icon-margin-end: 16px,
+  $list-item-icon-margin-start: 16px,
+  $card-actions-padding: 0.5rem 1rem,
+  $color-picker-controls-padding: 8px 16px,
+  $color-picker-input-margin-bottom: 5px,
+  $color-picker-swatch-color-width: 18px,
+  $color-picker-swatch-margin-bottom: 0px,
+  $input-affix-margin-inside: 8px
+);

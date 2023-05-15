@@ -27,11 +27,6 @@
 import CustomBtn from "@/components/CustomBtn.vue";
 import LogoGroup from "@/components/LogoGroup.vue";
 
-import { onMounted, onUnmounted } from "vue";
-import { useSystem } from "@/store";
-
-const systemStore = useSystem();
-
 const defaults = {
   VTextField: {
     variant: "solo",
@@ -50,10 +45,6 @@ const defaults = {
     color: "primary",
   },
 };
-
-// Hooks
-onMounted(() => systemStore.hideUI());
-onUnmounted(() => systemStore.showUI());
 </script>
 
 <style scoped></style>

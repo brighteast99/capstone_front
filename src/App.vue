@@ -20,10 +20,13 @@
 import PageHeader from "@/components/PageHeader.vue";
 import { computed } from "vue";
 import { useSystem } from "@/store";
+import router from "./router";
 
 const systemStore = useSystem();
 
-const displayUI = computed(() => systemStore.displayUI);
+const displayUI = computed(() =>
+  systemStore.displayUI(router.currentRoute.value.name)
+);
 </script>
 
 <style scoped>

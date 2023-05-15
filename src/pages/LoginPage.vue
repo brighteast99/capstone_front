@@ -75,7 +75,7 @@
 <script setup>
 import CustomBtn from "@/components/CustomBtn.vue";
 
-import { ref, onMounted, onUnmounted } from "vue";
+import { ref } from "vue";
 import { useSystem } from "@/store";
 import LogoGroup from "@/components/LogoGroup.vue";
 import router from "@/router";
@@ -110,10 +110,6 @@ const pw = ref("");
  */
 const idRules = [];
 const pwRules = [];
-
-// Hooks
-onMounted(() => systemStore.hideUI());
-onUnmounted(() => systemStore.showUI());
 
 // Methods
 const login = async () => {

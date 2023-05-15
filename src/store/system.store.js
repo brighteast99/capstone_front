@@ -1,31 +1,25 @@
-import { ref, reactive } from "vue";
+import { reactive, computed } from "vue";
 import { defineStore } from "pinia";
 
 export const useSystem = defineStore(
   "system",
   () => {
-    const loggedIn = ref(false);
-    const currentUser = reactive({
-      id: "test",
-      name: "홍길동",
-      email: "example@example.com",
+    const _currentUser = reactive({
+      id: null,
     });
 
-    const displayUI = (currentPageName) => {
-      const UILESS_PAGES = ["Login", "FindUID", "FindPW", "Register"];
-      console.log(currentPageName);
-      return !UILESS_PAGES.includes(currentPageName);
+    const currentUser = computed(() => _currentUser);
+    const loggedIn = computed(() => _currentUser.id != null);
+
+    const logIn = (id) => {
+      _currentUser.id = id;
     };
 
-    const login = () => {
-      loggedIn.value = true;
+    const logOut = () => {
+      _currentUser.id = null;
     };
 
-    const logout = () => {
-      loggedIn.value = false;
-    };
-
-    return { loggedIn, currentUser, displayUI, login, logout };
+    return { currentUser, loggedIn, logIn, logOut };
   },
   { persist: true }
 );

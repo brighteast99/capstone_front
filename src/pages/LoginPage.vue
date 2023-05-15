@@ -119,7 +119,7 @@ const login = async () => {
   /**
    * TODO 로그인 구현
    */
-  systemStore.login();
+  systemStore.login(1);
   router.push({ name: "Main" });
 };
 </script>

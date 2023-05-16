@@ -17,7 +17,9 @@
           >
             게시판
           </custom-btn>
-          <custom-btn weight="bold" :to="{ name: 'Search' }">검색</custom-btn>
+          <custom-btn weight="bold" :to="{ name: pages.Search }"
+            >검색</custom-btn
+          >
 
           <v-spacer></v-spacer>
 
@@ -27,7 +29,7 @@
               variant="outlined"
               size="small"
               color="primary"
-              :to="{ name: 'Login' }"
+              :to="{ name: pages.Login }"
               style="margin-right: 10px"
             >
               로그인
@@ -36,7 +38,7 @@
               variant="flat"
               size="small"
               color="primary"
-              :to="{ name: 'Register' }"
+              :to="{ name: pages.Register }"
             >
               회원가입
             </v-btn>
@@ -206,7 +208,7 @@
                   class="mb-1"
                   default-color="white"
                   :to="{
-                    name: 'PostListPage',
+                    name: pages.PostList,
                     params: { boardId: board.boardId },
                   }"
                   :size="16"
@@ -261,7 +263,7 @@ import LogoGroup from "@/components/LogoGroup.vue";
 import { reactive, computed } from "vue";
 import { useSystemStore, useModalStore } from "@/store";
 import { modalResponses } from "@/store/modal.store";
-import router from "@/router";
+import { pages } from "@/router";
 
 // Style
 const defaults = {
@@ -319,19 +321,19 @@ const items = [
       title: "내 정보",
       value: 1,
       appendIcon: "mdi-account-circle",
-      routeName: "UserInfo",
+      routeName: pages.UserInfo,
     },
     {
       title: "작성글 목록",
       value: 3,
       appendIcon: "mdi-newspaper-variant-multiple",
-      routeName: "UserPosts",
+      routeName: pages.UserPosts,
     },
     {
       title: "관심글 목록",
       value: 4,
       appendIcon: "mdi-bookmark-multiple",
-      routeName: "UserBookmarks",
+      routeName: pages.UserBookmarks,
     },
   ],
 ];
@@ -352,7 +354,6 @@ const logout = async () => {
 
   systemStore.logOut();
   menuMVs.menu = false;
-  router.push({ name: "Main" });
 };
 const boardsInclude = () => {
   return [document.querySelector(".board-included")];

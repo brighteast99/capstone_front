@@ -14,8 +14,11 @@
 
         <!-- Help area -->
         <v-row class="mt-3" justify="start" style="font-size: 0.9em">
-          <custom-btn class="pl-0" weight="normal" :to="{ name: 'Login' }">
-            ＜ 로그인 페이지로
+          <custom-btn class="pl-0" weight="normal" :to="{ name: pages.Login }">
+            <template v-slot:prepend>
+              <v-icon icon="mdi-chevron-left"></v-icon>
+            </template>
+            로그인 페이지로
           </custom-btn>
         </v-row>
       </v-container>
@@ -26,6 +29,8 @@
 <script setup>
 import CustomBtn from "@/components/CustomBtn.vue";
 import LogoGroup from "@/components/LogoGroup.vue";
+
+import { pages } from "@/router";
 
 const defaults = {
   VTextField: {

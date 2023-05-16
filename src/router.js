@@ -1,31 +1,72 @@
 import { createWebHistory, createRouter } from "vue-router";
+import { useSystemStore, useModalStore } from "./store";
+import { modalResponses } from "./store/modal.store";
+
+const pages = {
+  Main: "Main",
+  Board: "Board",
+  PostList: "PostList",
+  NewPost: "NewPost",
+  ViewPost: "ViewPost",
+  Search: "Search",
+  UserInfo: "UserInfo",
+  UserPosts: "UserPosts",
+  UserBookmarks: "UserBookmarks",
+  Login: "Login",
+  Register: "Register",
+  FindUID: "FindUID",
+  FindPW: "FindPW",
+  NotFound: "NotFound",
+};
+Object.freeze(pages);
+
+export { pages };
 
 const routes = [
   // Main Page
   {
     path: "/",
-    name: "Main",
+    name: pages.Main,
     component: () => import("@/pages/MainPage"),
   },
   // Board page
   {
     path: "/boards/:boardId",
-    name: "Board",
-
+    name: pages.Board,
     children: [
       {
         path: "posts",
         children: [
           {
             path: "",
-            name: "PostListPage",
+            name: pages.PostList,
             props: true,
             component: () => import("@/pages/PostListPage"),
           },
           {
             path: "new",
-            name: "NewPostPage",
+            name: pages.NewPost,
             component: () => import("@/pages/PostPage"),
+            beforeEnter: async () => {
+              const systemStore = useSystemStore();
+              const modalStore = useModalStore();
+              if (!systemStore.loggedIn) {
+                if (
+                  (await modalStore.openModal("로그인이 필요합니다.", null, {
+                    actions: [
+                      { label: "로그인" },
+                      {
+                        label: "취소",
+                        response: modalResponses.Cancel,
+                        color: "black",
+                      },
+                    ],
+                  })) == modalResponses.Cancel
+                )
+                  return false;
+                return { name: pages.Login };
+              }
+            },
             props: (route) => ({
               boardId: route.params.boardId,
               editing: true,
@@ -33,7 +74,7 @@ const routes = [
           },
           {
             path: ":postId",
-            name: "PostPage",
+            name: pages.ViewPost,
             component: () => import("@/pages/PostPage"),
             props: (route) => ({
               boardId: route.params.boardId,
@@ -48,25 +89,25 @@ const routes = [
   // Search Page
   {
     path: "/search",
-    name: "Search",
+    name: pages.Search,
     component: () => import("@/pages/SearchPage"),
   },
   // User info page
   {
     path: "/users/:userId",
-    name: "UserInfo",
+    name: pages.UserInfo,
     component: () => import("@/pages/UserInfoPage"),
     props: true,
     children: [
       {
         path: "posts",
-        name: "UserPosts",
+        name: pages.UserPosts,
 
         component: () => import("@/pages/UserInfoPage"),
       },
       {
         path: "bookmarks",
-        name: "UserBookmarks",
+        name: pages.UserBookmarks,
 
         component: () => import("@/pages/UserInfoPage"),
       },
@@ -75,28 +116,31 @@ const routes = [
   // Login page
   {
     path: "/login",
-    name: "Login",
+    name: pages.Login,
+    beforeEnter: () => {
+      const systemStore = useSystemStore();
+      if (systemStore.loggedIn) return { name: pages.Main };
+    },
     component: () => import("@/pages/LoginPage"),
   },
   // Register & find ID/PW page
   {
     path: "/account",
-    name: "Account",
     component: () => import("@/pages/AccountPage"),
     children: [
       {
         path: "register",
-        name: "Register",
+        name: pages.Register,
         component: () => import("@/components/forms/RegisterForm"),
       },
       {
         path: "find/id",
-        name: "FindUID",
+        name: pages.FindUID,
         component: () => import("@/components/forms/FindIdForm"),
       },
       {
         path: "find/pw",
-        name: "FindPW",
+        name: pages.FindPW,
         component: () => import("@/components/forms/FindPwForm"),
       },
     ],
@@ -105,7 +149,7 @@ const routes = [
   // 404:Not Found
   {
     path: "/:pathMatch(.*)*",
-    name: "notFound",
+    name: pages.NotFound,
     component: () => import("@/pages/NotFoundPage"),
   },
 ];

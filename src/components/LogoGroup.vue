@@ -6,7 +6,7 @@
           icon="mdi-account-multiple"
           color="primary"
           :size="props.iconSize"
-          @click="router.push({ name: 'Main' })"
+          @click="router.push({ name: pages.Main })"
         ></v-icon>
       </v-col>
       <v-col
@@ -29,6 +29,7 @@
 <script setup>
 import { defineProps } from "vue";
 import router from "@/router";
+import { pages } from "@/router";
 
 const props = defineProps({
   iconSize: {

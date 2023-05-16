@@ -6,7 +6,7 @@
       <v-spacer></v-spacer>
       <custom-btn
         size="small"
-        :to="{ name: 'NewPostPage', params: { boardId: props.boardId } }"
+        :to="{ name: pages.NewPost, params: { boardId: props.boardId } }"
       >
         게시글 작성
       </custom-btn>
@@ -27,7 +27,7 @@
           <v-list-item v-for="post in posts" :key="post">
             <custom-btn
               :to="{
-                name: 'PostPage',
+                name: pages.ViewPost,
                 params: { boardId: props.boardId, postId: post.postId },
               }"
             >
@@ -59,6 +59,7 @@
 import CustomBtn from "@/components/CustomBtn.vue";
 
 import { defineProps, reactive, onMounted } from "vue";
+import { pages } from "@/router";
 import { useDevelopStore } from "@/store";
 
 // Pinia storage

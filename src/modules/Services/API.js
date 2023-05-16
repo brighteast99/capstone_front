@@ -4,6 +4,7 @@ const API = {
   Test: "test",
   SignIn: "signin_user",
   SignUp: "signup_user",
+  CheckExistingID: "is_duplicate_id",
   GetUser: "user",
   GetUsers: "users",
   EditUser: "edit_user",
@@ -39,4 +40,11 @@ const apiRequest = (name, args, fields) => {
   return HTTP.post("", { query: queryString });
 };
 
-export { API, apiRequest };
+const parseResponse = (_response) => {
+  return new Promise((resolve) => {
+    const response = _response.data;
+    resolve(response["data"]);
+  });
+};
+
+export { API, apiRequest, parseResponse };

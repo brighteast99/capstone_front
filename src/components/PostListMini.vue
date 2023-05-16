@@ -8,7 +8,7 @@
       <v-spacer></v-spacer>
       <custom-btn
         size="small"
-        :to="{ name: 'PostListPage', params: { boardId: props.boardId } }"
+        :to="{ name: pages.PostList, params: { boardId: props.boardId } }"
       >
         전체보기
       </custom-btn>
@@ -24,7 +24,7 @@
         default-color="black"
         :size="16"
         :to="{
-          name: 'PostPage',
+          name: pages.ViewPost,
           params: { boardId: item.boardId, postId: item.postId },
         }"
       >
@@ -40,6 +40,7 @@
 import CustomBtn from "./CustomBtn.vue";
 
 import { defineProps } from "vue";
+import { pages } from "@/router";
 
 const props = defineProps({
   boardName: String,

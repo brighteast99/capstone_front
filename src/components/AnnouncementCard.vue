@@ -8,7 +8,7 @@
       <custom-btn
         class="announce-title-btn"
         :to="{
-          name: 'PostPage',
+          name: pages.ViewPost,
           params: { boardId: 'announcements', postId: currentAnnounce?.postId },
         }"
       >
@@ -33,6 +33,7 @@
 import CustomBtn from "./CustomBtn.vue";
 
 import { ref, computed, reactive, onMounted, onBeforeUnmount } from "vue";
+import { pages } from "@/router";
 import { useDevelopStore } from "@/store";
 
 // Pinia storage

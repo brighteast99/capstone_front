@@ -478,7 +478,7 @@ import {
 import { useEditor, EditorContent } from "@tiptap/vue-3";
 import StarterKit from "@tiptap/starter-kit";
 import { Placeholder } from "@tiptap/extension-placeholder";
-import FontSize from "@/Tiptap/extension-font-size";
+import FontSize from "@/modules/Tiptap/extension-font-size";
 import { Underline } from "@tiptap/extension-underline";
 import { Superscript } from "@tiptap/extension-superscript";
 import { Subscript } from "@tiptap/extension-subscript";

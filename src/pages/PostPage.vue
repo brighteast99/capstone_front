@@ -3,7 +3,7 @@
     v-if="!isEditing && props.postId"
     class="mt-5 pl-0 mb-1"
     @click="
-      router.push({ name: 'PostListPage', params: { boardId: props.boardId } })
+      router.push({ name: pages.PostList, params: { boardId: props.boardId } })
     "
   >
     <template v-slot:prepend>
@@ -44,22 +44,21 @@
     </template>
 
     <template v-else>
-      <v-card-title>
+      <v-card-title class="pb-0">
         <div class="d-flex flex-column">
-          <span class="title">{{ postData.title }}</span>
+          <span class="title mb-3">{{ postData.title }}</span>
           <p class="info-area">
-            <span>
-              작성자:
-              <custom-btn
-                class="writer-btn"
-                :to="{
-                  name: 'UserInfo',
-                  params: { userId: postData.writer?.id },
-                }"
-              >
-                {{ postData.writer?.name }}
-              </custom-btn>
-            </span>
+            <span> 작성자: </span>
+            <custom-btn
+              weight="bold"
+              :to="{
+                name: pages.UserInfo,
+                params: { userId: postData.writer?.id },
+              }"
+            >
+              {{ postData.writer?.name }}
+            </custom-btn>
+            <v-spacer></v-spacer>
             <span>{{ `작성일: ${date}` }} </span>
             <span v-if="postData.modifyDate">
               {{ `최종 수정일: ${modifyDate}` }}
@@ -144,6 +143,7 @@ import {
 import { onBeforeRouteLeave, onBeforeRouteUpdate } from "vue-router";
 import { storeToRefs } from "pinia";
 import router from "@/router";
+import { pages } from "@/router";
 import {
   useDevelopStore,
   useSystemStore,
@@ -175,8 +175,6 @@ const canLeave = computed(() => {
   return !isEdited.value;
 });
 const isUsersPost = computed(() => {
-  console.log(postData.writer?.id);
-  console.log(currentUser.value?.id);
   return currentUser.value.id == postData.writer?.id;
 });
 const isEditing = ref(false);
@@ -222,15 +220,13 @@ const props = defineProps({
 // Watches
 watchEffect(async () => {
   if (!loggedIn.value && isEditing.value) {
-    await modalStore.openModal(
-      "로그인이 필요합니다.\n메인 페이지로 이동합니다.",
-      null,
-      {
-        actions: modalPresets.OK,
-      }
-    );
+    const response = await modalStore.openModal("로그인이 필요합니다!", null, {
+      actions: modalPresets.OKCancel,
+    });
     intendedLeaving = true;
-    router.push({ name: "Main" });
+    router.push({
+      name: response == modalResponses.Cancel ? pages.Main : pages.Login,
+    });
   }
 });
 
@@ -345,7 +341,7 @@ const deletePost = async () => {
       actions: modalPresets.OK,
     });
     intendedLeaving = true;
-    router.push({ name: "PostListPage", params: { boardId: props.boardId } });
+    router.push({ name: pages.PostList, params: { boardId: props.boardId } });
   }
   //삭제 실패시
   // {
@@ -422,7 +418,7 @@ const post = async () => {
     const postId = 1234; //서버에서 받아온 postId;
     if (!props.postId) {
       router.replace({
-        name: "PostPage",
+        name: pages.ViewPost,
         params: { boardId: props.boardId, postId: postId },
         props: { editing: false },
       });
@@ -466,15 +462,6 @@ const beforeunloadEvent = (event) => {
   font-size: 0.7em;
   color: gray;
   font-weight: 300;
-}
-
-.writer-btn {
-  display: inline-block;
-  padding: 0;
-}
-
-.info-area > span {
-  margin-right: 10px;
 }
 
 .comment-title {

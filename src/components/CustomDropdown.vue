@@ -23,6 +23,7 @@
           size="12"
           :color="dropdownOpened ? activeColor : 'black'"
           :active="dropdownOpened || isHover"
+          style="align-self: center"
         >
           <v-icon
             :icon="dropdownOpened ? 'mdi-chevron-down' : 'mdi-chevron-up'"

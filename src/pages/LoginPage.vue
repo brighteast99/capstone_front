@@ -76,7 +76,7 @@
 import CustomBtn from "@/components/CustomBtn.vue";
 
 import { ref } from "vue";
-import { useSystem } from "@/store";
+import { useSystemStore } from "@/store";
 import LogoGroup from "@/components/LogoGroup.vue";
 import router from "@/router";
 
@@ -98,7 +98,7 @@ const defaults = {
 };
 
 // Data
-const systemStore = useSystem();
+const systemStore = useSystemStore();
 
 const loginForm = ref(null);
 
@@ -119,7 +119,7 @@ const login = async () => {
   /**
    * TODO 로그인 구현
    */
-  systemStore.login(1);
+  systemStore.logIn(1);
   router.push({ name: "Main" });
 };
 </script>

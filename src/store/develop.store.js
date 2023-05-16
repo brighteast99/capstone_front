@@ -2,7 +2,7 @@ import { reactive } from "vue";
 import { defineStore } from "pinia";
 
 export const useDevelopStore = defineStore(
-  "debug",
+  "develop",
   () => {
     const announcements = reactive([
       {
@@ -127,7 +127,19 @@ export const useDevelopStore = defineStore(
       },
     });
 
-    return { announcements, boards, posts, newPosts, trendingPosts, postData };
+    const updatePost = (newPost) => {
+      Object.assign(postData, newPost);
+    };
+
+    return {
+      announcements,
+      boards,
+      posts,
+      newPosts,
+      trendingPosts,
+      postData,
+      updatePost,
+    };
   },
   { persist: true }
 );

@@ -259,7 +259,8 @@ import CustomBtn from "@/components/CustomBtn.vue";
 import LogoGroup from "@/components/LogoGroup.vue";
 
 import { reactive, computed } from "vue";
-import { useSystem } from "@/store";
+import { useSystemStore, useModalStore } from "@/store";
+import { modalResponses } from "@/store/modal.store";
 import router from "@/router";
 
 // Style
@@ -281,7 +282,8 @@ const defaults = {
 };
 
 // Pinia Storage
-const systemStore = useSystem();
+const systemStore = useSystemStore();
+const modalStore = useModalStore();
 
 // Data
 const currentUser = computed(() => systemStore.currentUser);
@@ -337,8 +339,16 @@ const alerts = computed(() => 10);
 const menuMVs = reactive({ boards: false, alert: false, menu: false });
 
 // Methods
-const logout = () => {
-  if (!confirm("로그아웃하시겠습니까?")) return;
+const logout = async () => {
+  if (
+    (await modalStore.openModal("로그아웃하시겠습니까?", null, {
+      actions: [
+        { label: "로그아웃", color: "error" },
+        { label: "취소", response: modalResponses.Cancel, color: "black" },
+      ],
+    })) == modalResponses.Cancel
+  )
+    return;
 
   systemStore.logOut();
   menuMVs.menu = false;

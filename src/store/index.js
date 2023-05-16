@@ -1,7 +1,13 @@
-import { useSystem } from "@/store/system.store";
-import { useInterface } from "@/store/interface.store";
-import { useModal } from "./modal.store";
+import { useSystemStore } from "@/store/system.store";
+import { useInterfaceStore } from "@/store/interface.store";
+import { useModalStore } from "./modal.store";
 import { useTextEditor } from "@/store/textEditor.store";
 import { useDevelopStore } from "@/store/develop.store";
 
-export { useSystem, useInterface, useModal, useTextEditor, useDevelopStore };
+export {
+  useSystemStore,
+  useInterfaceStore,
+  useModalStore,
+  useTextEditor,
+  useDevelopStore,
+};

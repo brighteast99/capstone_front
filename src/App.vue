@@ -19,8 +19,8 @@
 
 <script setup>
 import PageHeader from "@/components/PageHeader.vue";
-import { useInterface } from "@/store";
+import { useInterfaceStore } from "@/store";
 import CustomDialog from "./components/CustomDialog.vue";
 
-const interfaceStore = useInterface();
+const interfaceStore = useInterfaceStore();
 </script>

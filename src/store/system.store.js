@@ -1,22 +1,23 @@
 import { reactive, computed } from "vue";
 import { defineStore } from "pinia";
 
-export const useSystem = defineStore(
+export const useSystemStore = defineStore(
   "system",
   () => {
-    const _currentUser = reactive({
+    const currentUser = reactive({
       id: null,
+      name: null,
+      email: null,
     });
 
-    const currentUser = computed(() => _currentUser);
-    const loggedIn = computed(() => _currentUser.id != null);
+    const loggedIn = computed(() => currentUser.id != null);
 
     const logIn = (id) => {
-      _currentUser.id = id;
+      currentUser.id = id;
     };
 
     const logOut = () => {
-      _currentUser.id = null;
+      currentUser.id = null;
     };
 
     return { currentUser, loggedIn, logIn, logOut };

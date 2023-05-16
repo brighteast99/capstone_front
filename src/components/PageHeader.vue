@@ -22,7 +22,7 @@
           <v-spacer></v-spacer>
 
           <!-- Login menu -->
-          <div v-if="!loggedIn" class="row">
+          <div v-if="!systemStore.loggedIn" class="row">
             <v-btn
               variant="outlined"
               size="small"
@@ -165,6 +165,7 @@
       </v-defaults-provider>
     </v-container>
 
+    <!-- Navigation menu -->
     <v-slide-y-transition>
       <v-container v-if="menuMVs.boards" class="boards-list py-1" fluid>
         <v-row
@@ -178,13 +179,19 @@
             class="pa-0 d-flex flex-column justify-center"
             style="flex-basis: 24px; flex-grow: 0"
           >
-            <v-icon v-if="!left" icon="mdi-chevron-left" color="grey"></v-icon>
+            <v-icon
+              v-if="!position.left"
+              icon="mdi-chevron-left"
+              color="grey"
+            ></v-icon>
           </v-col>
 
           <v-col class="boards-list-boundary">
             <div class="d-flex" style="width: 100%">
               <div
-                v-intersect="(isInterSecting) => (left = isInterSecting)"
+                v-intersect="
+                  (isInterSecting) => (position.left = isInterSecting)
+                "
                 style="width: 1px"
               ></div>
 
@@ -213,13 +220,19 @@
 
               <div
                 class="text-h5 d-flex justify-center align-center"
-                style="flex-grow: 1; color: rgba(255, 255, 255, 0.1)"
+                style="
+                  flex-grow: 1;
+                  color: rgba(255, 255, 255, 0.1);
+                  min-width: fit-content;
+                "
               >
-                서비스 확대 준비중
+                서비스 확대 준비중입니다
               </div>
 
               <div
-                v-intersect="(isInterSecting) => (right = isInterSecting)"
+                v-intersect="
+                  (isInterSecting) => (position.right = isInterSecting)
+                "
                 style="width: 1px"
               ></div>
             </div>
@@ -230,7 +243,7 @@
             style="flex-basis: 24px; flex-grow: 0"
           >
             <v-icon
-              v-if="!right"
+              v-if="!position.right"
               icon="mdi-chevron-right"
               color="grey"
             ></v-icon>
@@ -245,8 +258,9 @@
 import CustomBtn from "@/components/CustomBtn.vue";
 import LogoGroup from "@/components/LogoGroup.vue";
 
-import { ref, reactive, computed } from "vue";
-import { useSystem } from "@/store";
+import { reactive, computed } from "vue";
+import { useSystemStore, useModalStore } from "@/store";
+import { modalResponses } from "@/store/modal.store";
 import router from "@/router";
 
 // Style
@@ -268,13 +282,12 @@ const defaults = {
 };
 
 // Pinia Storage
-const systemStore = useSystem();
+const systemStore = useSystemStore();
+const modalStore = useModalStore();
 
 // Data
-const loggedIn = computed(() => systemStore.loggedIn);
 const currentUser = computed(() => systemStore.currentUser);
-const left = ref(true);
-const right = ref(false);
+const position = reactive({ left: true, right: false });
 const categories = [
   [
     {
@@ -326,10 +339,18 @@ const alerts = computed(() => 10);
 const menuMVs = reactive({ boards: false, alert: false, menu: false });
 
 // Methods
-const logout = () => {
-  if (!confirm("로그아웃하시겠습니까?")) return;
+const logout = async () => {
+  if (
+    (await modalStore.openModal("로그아웃하시겠습니까?", null, {
+      actions: [
+        { label: "로그아웃", color: "error" },
+        { label: "취소", response: modalResponses.Cancel, color: "black" },
+      ],
+    })) == modalResponses.Cancel
+  )
+    return;
 
-  systemStore.logout();
+  systemStore.logOut();
   menuMVs.menu = false;
   router.push({ name: "Main" });
 };

@@ -1,11 +1,12 @@
 <template>
   <v-app>
     <!-- header -->
-    <page-header v-show="displayUI"></page-header>
+    <page-header v-show="interfaceStore.displayUI"></page-header>
     <!-- Main -->
+    <custom-dialog></custom-dialog>
     <v-main
       :style="{
-        marginTop: (displayUI ? '72' : '0') + 'px',
+        marginTop: (interfaceStore.displayUI ? '72' : '0') + 'px',
         position: 'relative',
       }"
     >
@@ -18,22 +19,8 @@
 
 <script setup>
 import PageHeader from "@/components/PageHeader.vue";
-import { computed } from "vue";
-import { useSystem } from "@/store";
-import router from "./router";
+import { useInterfaceStore } from "@/store";
+import CustomDialog from "./components/CustomDialog.vue";
 
-const systemStore = useSystem();
-
-const displayUI = computed(() =>
-  systemStore.displayUI(router.currentRoute.value.name)
-);
+const interfaceStore = useInterfaceStore();
 </script>
-
-<style scoped>
-.v-btn {
-  margin-top: auto;
-  margin-bottom: auto;
-  font-weight: bold;
-  font-size: 1em;
-}
-</style>

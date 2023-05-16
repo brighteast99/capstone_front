@@ -1,15 +1,20 @@
 <template>
-  <div
-    class="wrapper"
-    @mouseenter="isHover = true"
-    @mouseleave="isHover = false"
-  >
-    <button class="px-0" :style="style" @click="route">
-      <slot></slot>
-    </button>
+  <div class="wrapper">
+    <div
+      class="container"
+      @mouseenter="isHover = true"
+      @mouseleave="isHover = false"
+    >
+      <div :style="{ color: fontColor, marginLeft: 'auto' }">
+        <slot name="prepend"></slot>
+      </div>
+      <button class="px-0" :style="style" @click="route">
+        <slot></slot>
+      </button>
 
-    <div :style="{ color: fontColor, marginLeft: 'auto' }">
-      <slot name="append"></slot>
+      <div :style="{ color: fontColor, marginLeft: 'auto' }">
+        <slot name="append"></slot>
+      </div>
     </div>
   </div>
 </template>
@@ -79,13 +84,18 @@ button {
   transition: all 0.1s;
   padding-left: 0.5em;
   padding-right: 0.5em;
+  outline: none;
 }
 
 .wrapper {
+  width: fit-content;
+  padding: 0 0.5em 0 0.5em;
+}
+
+.container {
   display: flex;
   flex-direction: row;
   align-items: center;
-  padding: 0 0.5em 0 0.5em;
   height: fit-content;
 }
 </style>

@@ -314,7 +314,7 @@
                     label="이미지 URL"
                     variant="underlined"
                     density="compact"
-                    color="primary_accent"
+                    color="primary"
                     hide-details
                   ></v-text-field>
                   <v-file-input
@@ -323,7 +323,7 @@
                     label="로컬 파일 선택 (3MB 이하)"
                     variant="underlined"
                     density="comfortable"
-                    color="primary_accent"
+                    color="primary"
                     hide-details="auto"
                     clearable
                     accept="image/png, image/jpg, image/jpeg, image/svg+xml"
@@ -358,7 +358,7 @@
                 <v-spacer></v-spacer>
                 <v-btn
                   size="small"
-                  color="primary_accent"
+                  color="primary"
                   variant="flat"
                   @click="insertImage"
                 >
@@ -408,7 +408,7 @@
                   label="링크 주소"
                   variant="underlined"
                   density="compact"
-                  color="primary_accent"
+                  color="primary"
                   hide-details
                 ></v-text-field>
                 <v-expand-transition>
@@ -418,7 +418,7 @@
                     label="링크 이름"
                     variant="underlined"
                     density="compact"
-                    color="primary_accent"
+                    color="primary"
                     hide-details="auto"
                   ></v-text-field>
                 </v-expand-transition>
@@ -438,7 +438,7 @@
                 <v-spacer></v-spacer>
                 <v-btn
                   size="small"
-                  color="primary_accent"
+                  color="primary"
                   variant="flat"
                   type="submit"
                   @click="insertLink"

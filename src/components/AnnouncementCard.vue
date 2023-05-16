@@ -1,7 +1,7 @@
 <template>
   <v-card variant="flat" color="background">
     <div class="area">
-      <p class="mx-2" style="font-weight: bold; white-space: nowrap">
+      <p class="mx-2" style="font-weight: bold; min-width: fit-content">
         공지사항
       </p>
 
@@ -12,6 +12,7 @@
           params: { boardId: 'announcements', postId: currentAnnounce?.postId },
         }"
       >
+        <!-- {{ currentAnnounce?.title }} -->
         <v-scroll-y-reverse-transition leave-absolute>
           <p v-if="transition" class="announce-title">
             {{ currentAnnounce?.title }}
@@ -23,12 +24,7 @@
       </custom-btn>
 
       <v-spacer></v-spacer>
-      <custom-btn
-        size="small"
-        :to="{ name: 'PostListPage', params: { boardId: 'announcements' } }"
-      >
-        모든 공지 보기
-      </custom-btn>
+      <custom-btn size="small"> 모든 공지 보기 </custom-btn>
     </div>
   </v-card>
 </template>
@@ -76,7 +72,8 @@ const move = (amount = 1) => {
 }
 
 .announce-title-btn {
-  width: 80%;
+  flex-shrink: 1;
+  min-width: 0;
 }
 
 .announce-title {

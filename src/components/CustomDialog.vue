@@ -1,9 +1,5 @@
 <template>
-  <v-dialog
-    v-model="state.display"
-    :persistent="options.persistent"
-    :scrim="options.persistent ? 'black' : 'transparent'"
-  >
+  <v-dialog v-model="state.display" :persistent="options.persistent">
     <v-card v-click-outside="onClickOutside">
       <v-card-title v-if="data.title" class="modal-title">
         {{ data.title }}

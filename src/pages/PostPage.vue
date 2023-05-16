@@ -175,8 +175,6 @@ const canLeave = computed(() => {
   return !isEdited.value;
 });
 const isUsersPost = computed(() => {
-  console.log(postData.writer?.id);
-  console.log(currentUser.value?.id);
   return currentUser.value.id == postData.writer?.id;
 });
 const isEditing = ref(false);

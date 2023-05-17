@@ -1,9 +1,10 @@
 <template>
   <v-app>
-    <!-- header -->
+    <!-- Header -->
     <page-header v-show="interfaceStore.displayUI"></page-header>
-    <!-- Main -->
+    <!-- Modal -->
     <custom-dialog></custom-dialog>
+    <!-- Main -->
     <v-main
       :style="{
         marginTop: (interfaceStore.displayUI ? '72' : '0') + 'px',
@@ -24,3 +25,9 @@ import CustomDialog from "./components/CustomDialog.vue";
 
 const interfaceStore = useInterfaceStore();
 </script>
+
+<style scoped>
+.v-main {
+  overflow: scroll;
+}
+</style>

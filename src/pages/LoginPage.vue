@@ -6,41 +6,52 @@
         <v-row>
           <logo-group icon-size="96" font-size="1.3em"></logo-group>
         </v-row>
-        <v-row> 테스트중. 로그인 버튼 누르면 바로 로그인됨 </v-row>
 
         <!-- Form area -->
         <v-form ref="loginForm" style="width: 100%" @submit.prevent="login">
           <v-row>
             <v-text-field
-              v-model="uid"
+              v-model="formData.my_id"
               label="아이디"
-              :rules="idRules"
+              :error="false"
             ></v-text-field>
           </v-row>
           <v-row>
             <v-text-field
-              v-model="pw"
+              v-model="formData.pw"
               label="비밀번호"
               type="password"
-              :rules="pwRules"
+              :error="false"
             ></v-text-field>
           </v-row>
           <v-row>
-            <v-btn block type="submit" color="primary">로그인</v-btn>
+            <v-btn
+              block
+              type="submit"
+              color="primary"
+              :disabled="loggingIn"
+              :loading="loggingIn"
+            >
+              로그인
+            </v-btn>
           </v-row>
           <v-row>
-            <v-checkbox
-              label="로그인 유지"
+            <!-- <v-checkbox
+              label="로그인 유지(미구현)"
               color="primary"
               hide-details
               density="compact"
-            ></v-checkbox>
+            ></v-checkbox> -->
           </v-row>
         </v-form>
 
         <!-- Help area -->
         <v-row class="mt-3" style="font-size: 0.9em">
-          <custom-btn class="pl-0 pr-1" weight="bold" :to="{ name: 'FindUID' }">
+          <custom-btn
+            class="pl-0 pr-1"
+            weight="bold"
+            :to="{ name: pages.FindUID.name }"
+          >
             아이디
           </custom-btn>
           <v-col>
@@ -50,7 +61,7 @@
             <custom-btn
               class="pl-1 pr-0"
               weight="bold"
-              :to="{ name: 'FindPW' }"
+              :to="{ name: pages.FindPW.name }"
             >
               비밀번호
             </custom-btn>
@@ -62,7 +73,11 @@
           <v-spacer></v-spacer>
 
           <v-col>
-            <custom-btn class="pr-0" weight="bold" :to="{ name: 'Register' }">
+            <custom-btn
+              class="pr-0"
+              weight="bold"
+              :to="{ name: pages.Register.name }"
+            >
               계정이 없어요
             </custom-btn>
           </v-col>
@@ -75,12 +90,14 @@
 <script setup>
 import CustomBtn from "@/components/CustomBtn.vue";
 
-import { ref } from "vue";
-import { useSystemStore } from "@/store";
+import { ref, reactive } from "vue";
+import { useSystemStore, useModalStore } from "@/store";
+import { modalPresets } from "@/store/modal.store";
 import LogoGroup from "@/components/LogoGroup.vue";
-import router from "@/router";
+import router, { pages } from "@/router";
+import { validMyID, validPW } from "@/modules/validator";
 
-// Style
+// Styles
 const defaults = {
   VRow: {
     justify: "center",
@@ -93,34 +110,50 @@ const defaults = {
   VTextField: {
     variant: "solo",
     density: "compact",
-    hideDetails: "auto",
+    hideDetails: "true",
   },
 };
 
-// Data
-const systemStore = useSystemStore();
-
+// Component
 const loginForm = ref(null);
 
-const uid = ref("");
-const pw = ref("");
+// Pinia storage
+const systemStore = useSystemStore();
+const modalStore = useModalStore();
 
-/**
- * TODO 아이디 비밀번호 규칙 구현
- */
-const idRules = [];
-const pwRules = [];
+// Data
+const formData = reactive({
+  my_id: "",
+  pw: "",
+});
+const loggingIn = ref(false);
 
 // Methods
 const login = async () => {
-  const valid = (await loginForm.value.validate()).valid;
-  if (!valid) return;
+  loggingIn.value = true;
+  if (!validMyID(formData.my_id) || !validPW(formData.pw)) {
+    await loginFailed();
+    loggingIn.value = false;
+    return;
+  }
 
-  /**
-   * TODO 로그인 구현
-   */
-  systemStore.logIn(1);
-  router.push({ name: "Main" });
+  systemStore
+    .login({ my_id: formData.my_id, password: formData.pw })
+    .then((result) => {
+      if (result) router.push({ name: pages.Main.name });
+    })
+    .catch(async () => await loginFailed())
+    .finally(() => (loggingIn.value = false));
+};
+
+const loginFailed = async () => {
+  await modalStore.openModal(
+    "아이디 또는 비밀번호가 올바르지 않습니다.",
+    null,
+    {
+      actions: modalPresets.OK,
+    }
+  );
 };
 </script>
 

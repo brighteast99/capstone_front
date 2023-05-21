@@ -1,5 +1,10 @@
 <template>
-  <v-dialog v-model="state.display" :persistent="options.persistent">
+  <v-dialog
+    v-model="state.display"
+    :persistent="options.persistent"
+    :scrim="options.persistent ? 'black' : 'transparent'"
+    @update:model-value="if (!$event) onClickOutside();"
+  >
     <v-card v-click-outside="onClickOutside">
       <v-card-title v-if="data.title" class="modal-title">
         {{ data.title }}
@@ -14,7 +19,6 @@
           v-for="action in options.actions"
           :key="action"
           :color="action.color ?? undefined"
-          class="response-btn"
           @click="modalStore.closeModal(action.response ?? action.label)"
         >
           {{ action.label }}
@@ -41,7 +45,7 @@ const {
 
 // Methods
 const onClickOutside = () => {
-  if (options.persistent) return;
+  if (options.value.persistent) return;
 
   modalStore.closeModal(modalResponses.Cancel);
 };
@@ -49,8 +53,8 @@ const onClickOutside = () => {
 
 <style scoped>
 .v-card {
-  min-width: 25dvw;
-  max-width: 80dvw;
+  min-width: 10rem;
+  max-width: 50dvw;
   margin: auto;
 }
 
@@ -64,11 +68,7 @@ const onClickOutside = () => {
 }
 
 .modal-actions {
-  padding: 0;
-  justify-content: center;
-}
-
-.response-btn {
-  width: 20%;
+  padding: 0 3em 0 3em;
+  justify-content: space-around;
 }
 </style>

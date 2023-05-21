@@ -104,7 +104,7 @@ export const useDevelopStore = defineStore(
 
     const postData = reactive({
       writer: {
-        id: "test",
+        id: 0,
         name: "홍길동",
       },
       title: "테스트 게시물",

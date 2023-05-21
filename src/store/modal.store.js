@@ -44,7 +44,7 @@ const useModalStore = defineStore("modal", () => {
   /**
    * @param {string} title - title of the modal
    * @param {string} content - content of the modal
-   * @param {{persistent:{Type: Boolean, default: true}, actions:{Type: [{label:string,  response?:string, color?:string}], default:modalActions.YesNo} }} options - Persistency of the modal
+   * @param {{persistent:{Type: Boolean, default: true}, actions:{Type: [{label:string,  response?:string, color?:string}], default:modalActions.YesNo} }} options - Persistency, actions of the modal
    * @param {modalActions} [actions=modalActions.YesNo] - Possible Actions of the modal
    * @returns Modal response proxy
    */
@@ -53,8 +53,9 @@ const useModalStore = defineStore("modal", () => {
       modalData.content = content;
       modalData.title = title;
 
-      if (!validOption(options)) reject("Invalid modal option");
-      else {
+      if (!validOption(options)) {
+        reject("Invalid modal option");
+      } else {
         modalOptions.persistent = options.persistent ?? false;
         modalOptions.actions = options.actions ?? modalPresets.YesNo;
 

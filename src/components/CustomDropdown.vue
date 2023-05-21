@@ -64,13 +64,11 @@
                 :key="item"
                 :active="props.modelValue == item"
                 class="my-2"
+                style="width: 100%"
+                :weight="props.modelValue == item ? 'bold' : 'normal'"
                 @click="emits('update:modelValue', item)"
               >
-                <span
-                  :class="{ 'font-weight-medium': props.modelValue == item }"
-                >
-                  {{ item }}
-                </span>
+                {{ item }}
               </custom-btn>
 
               <div

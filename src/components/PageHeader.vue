@@ -17,7 +17,9 @@
           >
             게시판
           </custom-btn>
-          <custom-btn weight="bold" :to="{ name: 'Search' }">검색</custom-btn>
+          <custom-btn weight="bold" :to="{ name: pages.Search.name }"
+            >검색</custom-btn
+          >
 
           <v-spacer></v-spacer>
 
@@ -27,7 +29,7 @@
               variant="outlined"
               size="small"
               color="primary"
-              :to="{ name: 'Login' }"
+              :to="{ name: pages.Login.name }"
               style="margin-right: 10px"
             >
               로그인
@@ -36,7 +38,7 @@
               variant="flat"
               size="small"
               color="primary"
-              :to="{ name: 'Register' }"
+              :to="{ name: pages.Register.name }"
             >
               회원가입
             </v-btn>
@@ -165,6 +167,7 @@
       </v-defaults-provider>
     </v-container>
 
+    <!-- Navigation menu -->
     <v-slide-y-transition>
       <v-container v-if="menuMVs.boards" class="boards-list py-1" fluid>
         <v-row
@@ -178,13 +181,19 @@
             class="pa-0 d-flex flex-column justify-center"
             style="flex-basis: 24px; flex-grow: 0"
           >
-            <v-icon v-if="!left" icon="mdi-chevron-left" color="grey"></v-icon>
+            <v-icon
+              v-if="!position.left"
+              icon="mdi-chevron-left"
+              color="grey"
+            ></v-icon>
           </v-col>
 
           <v-col class="boards-list-boundary">
             <div class="d-flex" style="width: 100%">
               <div
-                v-intersect="(isInterSecting) => (left = isInterSecting)"
+                v-intersect="
+                  (isInterSecting) => (position.left = isInterSecting)
+                "
                 style="width: 1px"
               ></div>
 
@@ -199,7 +208,7 @@
                   class="mb-1"
                   default-color="white"
                   :to="{
-                    name: 'PostListPage',
+                    name: pages.PostList.name,
                     params: { boardId: board.boardId },
                   }"
                   :size="16"
@@ -213,13 +222,19 @@
 
               <div
                 class="text-h5 d-flex justify-center align-center"
-                style="flex-grow: 1; color: rgba(255, 255, 255, 0.1)"
+                style="
+                  flex-grow: 1;
+                  color: rgba(255, 255, 255, 0.1);
+                  min-width: fit-content;
+                "
               >
-                서비스 확대 준비중
+                서비스 확대 준비중입니다
               </div>
 
               <div
-                v-intersect="(isInterSecting) => (right = isInterSecting)"
+                v-intersect="
+                  (isInterSecting) => (position.right = isInterSecting)
+                "
                 style="width: 1px"
               ></div>
             </div>
@@ -230,7 +245,7 @@
             style="flex-basis: 24px; flex-grow: 0"
           >
             <v-icon
-              v-if="!right"
+              v-if="!position.right"
               icon="mdi-chevron-right"
               color="grey"
             ></v-icon>
@@ -245,9 +260,11 @@
 import CustomBtn from "@/components/CustomBtn.vue";
 import LogoGroup from "@/components/LogoGroup.vue";
 
-import { ref, reactive, computed } from "vue";
-import { useSystem } from "@/store";
-import router from "@/router";
+import { reactive, computed } from "vue";
+import { useSystemStore, useModalStore } from "@/store";
+import { storeToRefs } from "pinia";
+import { modalResponses } from "@/store/modal.store";
+import { pages } from "@/router";
 
 // Style
 const defaults = {
@@ -268,13 +285,12 @@ const defaults = {
 };
 
 // Pinia Storage
-const systemStore = useSystem();
+const systemStore = useSystemStore();
+const { loggedIn, currentUser } = storeToRefs(systemStore);
+const modalStore = useModalStore();
 
 // Data
-const loggedIn = computed(() => systemStore.loggedIn);
-const currentUser = computed(() => systemStore.currentUser);
-const left = ref(true);
-const right = ref(false);
+const position = reactive({ left: true, right: false });
 const categories = [
   [
     {
@@ -306,19 +322,19 @@ const items = [
       title: "내 정보",
       value: 1,
       appendIcon: "mdi-account-circle",
-      routeName: "UserInfo",
+      routeName: pages.UserInfo.name,
     },
     {
       title: "작성글 목록",
       value: 3,
       appendIcon: "mdi-newspaper-variant-multiple",
-      routeName: "UserPosts",
+      routeName: pages.UserPosts.name,
     },
     {
       title: "관심글 목록",
       value: 4,
       appendIcon: "mdi-bookmark-multiple",
-      routeName: "UserBookmarks",
+      routeName: pages.UserBookmarks.name,
     },
   ],
 ];
@@ -326,12 +342,19 @@ const alerts = computed(() => 10);
 const menuMVs = reactive({ boards: false, alert: false, menu: false });
 
 // Methods
-const logout = () => {
-  if (!confirm("로그아웃하시겠습니까?")) return;
+const logout = async () => {
+  if (
+    (await modalStore.openModal("로그아웃하시겠습니까?", null, {
+      actions: [
+        { label: "로그아웃", color: "error" },
+        { label: "취소", response: modalResponses.Cancel, color: "black" },
+      ],
+    })) === modalResponses.Cancel
+  )
+    return;
 
-  systemStore.logout();
+  systemStore.logOut();
   menuMVs.menu = false;
-  router.push({ name: "Main" });
 };
 const boardsInclude = () => {
   return [document.querySelector(".board-included")];

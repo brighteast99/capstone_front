@@ -1,33 +1,47 @@
-import { ref, reactive } from "vue";
+import { reactive, computed } from "vue";
 import { defineStore } from "pinia";
+import { API, apiRequest, parseResponse } from "@/modules/Services/API";
+import router, { pages } from "@/router";
 
-export const useSystem = defineStore(
+export const useSystemStore = defineStore(
   "system",
   () => {
-    const displayUI = ref(true);
-    const loggedIn = ref(false);
     const currentUser = reactive({
-      id: "test",
-      name: "홍길동",
-      email: "example@example.com",
+      id: null,
+      name: null,
+      email: null,
     });
 
-    const hideUI = () => {
-      displayUI.value = false;
-    };
-    const showUI = () => {
-      displayUI.value = true;
+    const loggedIn = computed(() => currentUser.id != null);
+
+    const login = (loginInfo) => {
+      return new Promise((resolve, reject) => {
+        apiRequest(API.SignIn, loginInfo, ["id", "name", "email"])
+          .then(parseResponse)
+          .then((response) => {
+            const loginData = response[API.SignIn];
+
+            if (loginData == null) resolve(false);
+            else {
+              Object.assign(currentUser, loginData);
+              currentUser.id = Number(currentUser.id);
+              resolve(true);
+            }
+          })
+          .catch((err) => reject(err));
+      });
     };
 
-    const login = () => {
-      loggedIn.value = true;
+    const logOut = () => {
+      currentUser.id = null;
+      currentUser.name = null;
+      currentUser.email = null;
+
+      if (pages[router.currentRoute.value.name].needLogin)
+        router.replace({ name: pages.Main.name });
     };
 
-    const logout = () => {
-      loggedIn.value = false;
-    };
-
-    return { displayUI, loggedIn, currentUser, hideUI, showUI, login, logout };
+    return { currentUser, loggedIn, login, logOut };
   },
   { persist: true }
 );

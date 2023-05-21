@@ -9,13 +9,25 @@
 
         <!-- Form area -->
         <v-row>
-          <router-view></router-view>
+          <router-view @completed="displayHelp = !$event"></router-view>
         </v-row>
 
         <!-- Help area -->
-        <v-row class="mt-3" justify="start" style="font-size: 0.9em">
-          <custom-btn class="pl-0" weight="normal" :to="{ name: 'Login' }">
-            ＜ 로그인 페이지로
+        <v-row
+          v-if="displayHelp"
+          class="mt-3"
+          justify="start"
+          style="font-size: 0.9em"
+        >
+          <custom-btn
+            class="pl-0"
+            weight="normal"
+            :to="{ name: pages.Login.name }"
+          >
+            <template v-slot:prepend>
+              <v-icon icon="mdi-chevron-left"></v-icon>
+            </template>
+            로그인 페이지로
           </custom-btn>
         </v-row>
       </v-container>
@@ -27,16 +39,25 @@
 import CustomBtn from "@/components/CustomBtn.vue";
 import LogoGroup from "@/components/LogoGroup.vue";
 
-import { onMounted, onUnmounted } from "vue";
-import { useSystem } from "@/store";
-
-const systemStore = useSystem();
+import { ref } from "vue";
+import { pages } from "@/router";
 
 const defaults = {
   VTextField: {
     variant: "solo",
     density: "compact",
-    hideDetails: "auto",
+    hideDetails: true,
+    clearable: true,
+  },
+  VCombobox: {
+    variant: "solo",
+    density: "compact",
+    clearable: true,
+    hideDetails: true,
+  },
+  VCheckbox: {
+    hideDetails: true,
+    density: "compact",
   },
   VRow: {
     justify: "center",
@@ -51,9 +72,7 @@ const defaults = {
   },
 };
 
-// Hooks
-onMounted(() => systemStore.hideUI());
-onUnmounted(() => systemStore.showUI());
+const displayHelp = ref(true);
 </script>
 
 <style scoped></style>

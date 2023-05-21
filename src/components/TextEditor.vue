@@ -314,7 +314,7 @@
                     label="이미지 URL"
                     variant="underlined"
                     density="compact"
-                    color="primary_accent"
+                    color="primary"
                     hide-details
                   ></v-text-field>
                   <v-file-input
@@ -323,7 +323,7 @@
                     label="로컬 파일 선택 (3MB 이하)"
                     variant="underlined"
                     density="comfortable"
-                    color="primary_accent"
+                    color="primary"
                     hide-details="auto"
                     clearable
                     accept="image/png, image/jpg, image/jpeg, image/svg+xml"
@@ -358,7 +358,7 @@
                 <v-spacer></v-spacer>
                 <v-btn
                   size="small"
-                  color="primary_accent"
+                  color="primary"
                   variant="flat"
                   @click="insertImage"
                 >
@@ -408,7 +408,7 @@
                   label="링크 주소"
                   variant="underlined"
                   density="compact"
-                  color="primary_accent"
+                  color="primary"
                   hide-details
                 ></v-text-field>
                 <v-expand-transition>
@@ -418,7 +418,7 @@
                     label="링크 이름"
                     variant="underlined"
                     density="compact"
-                    color="primary_accent"
+                    color="primary"
                     hide-details="auto"
                   ></v-text-field>
                 </v-expand-transition>
@@ -438,7 +438,7 @@
                 <v-spacer></v-spacer>
                 <v-btn
                   size="small"
-                  color="primary_accent"
+                  color="primary"
                   variant="flat"
                   type="submit"
                   @click="insertLink"
@@ -478,7 +478,7 @@ import {
 import { useEditor, EditorContent } from "@tiptap/vue-3";
 import StarterKit from "@tiptap/starter-kit";
 import { Placeholder } from "@tiptap/extension-placeholder";
-import FontSize from "@/Tiptap/extension-font-size";
+import FontSize from "@/modules/Tiptap/extension-font-size";
 import { Underline } from "@tiptap/extension-underline";
 import { Superscript } from "@tiptap/extension-superscript";
 import { Subscript } from "@tiptap/extension-subscript";
@@ -588,7 +588,7 @@ const fontSize = computed({
 const fontColor = computed({
   get: () => {
     const color = editor.value?.getAttributes("textStyle").color;
-    if (color === null || color === "") return "#000000";
+    if (color == null || color === "") return "#000000";
     return color;
   },
   set: (value) => {
@@ -719,7 +719,7 @@ const insertImage = async () => {
   let url;
 
   if (imageFormData.sourceIsURL) {
-    if (imageFormData.url === null || imageFormData.url.trim() === "") {
+    if (imageFormData.url == null || imageFormData.url.trim() === "") {
       menuMVs.Image = false;
       return;
     }
@@ -738,14 +738,14 @@ const insertImage = async () => {
 };
 const insertLink = () => {
   const url = linkFormData.url;
-  if (url === null || url.trim() === "") {
+  if (url == null || url.trim() === "") {
     menuMVs.Link = false;
     return;
   }
 
   let name = linkFormData.name;
   const { from, to } = editor.value?.state.selection;
-  if (linkFormData.name === null || linkFormData.name?.length == 0) {
+  if (linkFormData.name == null || linkFormData.name?.length == 0) {
     name =
       from == to
         ? linkFormData.url

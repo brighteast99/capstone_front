@@ -5,7 +5,9 @@
 
     <div class="d-flex">
       <custom-btn size="large" @click="router.back()">이전 페이지로</custom-btn>
-      <custom-btn size="large" :to="{ name: 'Main' }">메인 페이지로</custom-btn>
+      <custom-btn size="large" :to="{ name: pages.Main.name }"
+        >메인 페이지로</custom-btn
+      >
     </div>
   </div>
 </template>
@@ -13,5 +15,5 @@
 <script setup>
 import CustomBtn from "@/components/CustomBtn.vue";
 
-import router from "@/router";
+import router, { pages } from "@/router";
 </script>

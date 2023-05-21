@@ -1,36 +1,32 @@
 <template>
   <v-app>
-    <!-- header -->
-    <page-header v-show="displayUI"></page-header>
+    <!-- Header -->
+    <page-header v-show="interfaceStore.displayUI"></page-header>
+    <!-- Modal -->
+    <custom-dialog></custom-dialog>
     <!-- Main -->
     <v-main
       :style="{
-        marginTop: (displayUI ? '72' : '0') + 'px',
+        marginTop: (interfaceStore.displayUI ? '72' : '0') + 'px',
         position: 'relative',
       }"
     >
       <v-container class="pa-0" fluid style="max-width: 1024px">
-        <router-view> </router-view>
+        <router-view :key="$route.fullPath"> </router-view>
       </v-container>
     </v-main>
   </v-app>
 </template>
-
 <script setup>
 import PageHeader from "@/components/PageHeader.vue";
-import { computed } from "vue";
-import { useSystem } from "@/store";
+import { useInterfaceStore } from "@/store";
+import CustomDialog from "./components/CustomDialog.vue";
 
-const systemStore = useSystem();
-
-const displayUI = computed(() => systemStore.displayUI);
+const interfaceStore = useInterfaceStore();
 </script>
 
 <style scoped>
-.v-btn {
-  margin-top: auto;
-  margin-bottom: auto;
-  font-weight: bold;
-  font-size: 1em;
+.v-main {
+  overflow: scroll;
 }
 </style>

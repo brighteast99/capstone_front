@@ -11,12 +11,11 @@
       }"
     >
       <v-container class="pa-0" fluid style="max-width: 1024px">
-        <router-view> </router-view>
+        <router-view :key="$route.fullPath"> </router-view>
       </v-container>
     </v-main>
   </v-app>
 </template>
-
 <script setup>
 import PageHeader from "@/components/PageHeader.vue";
 import { useInterfaceStore } from "@/store";

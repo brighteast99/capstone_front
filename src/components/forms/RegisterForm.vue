@@ -1,53 +1,257 @@
 <template>
   <v-form ref="form" style="width: 100%" @submit.prevent="submit">
     <v-text-field
-      v-model="formData.name"
-      label="닉네임 (한글, 영문, 숫자 2~12자)"
-      :rules="rules.name"
-      clearable
+      v-model="formData.name.value"
+      label="닉네임"
+      autofocus
+      :error="!formData.name.validity.value && formData.name.validity.display"
+      @update:focused="formData.name.tooltip = $event"
+      @blur="formData.name.validity.display = true"
     >
+      <v-tooltip
+        activator="parent"
+        v-model="formData.name.tooltip"
+        :open-on-hover="false"
+        style="color: unset"
+      >
+        <custom-btn default-color="white">
+          <template v-slot:prepend>
+            <v-icon
+              class="mr-3"
+              :color="validityColor(formData.name.validity.length)"
+              :icon="validityIcon(formData.name.validity.length)"
+            ></v-icon>
+          </template>
+          2~12자 길이
+        </custom-btn>
+        <custom-btn default-color="white">
+          <template v-slot:prepend>
+            <v-icon
+              class="mr-3"
+              :icon="validityIcon(formData.name.validity.KorEngNumOnly)"
+              :color="validityColor(formData.name.validity.KorEngNumOnly)"
+            ></v-icon>
+          </template>
+          한글, 영문, 숫자만
+        </custom-btn>
+      </v-tooltip>
     </v-text-field>
 
-    <v-row>
-      <v-text-field
-        label="아이디 (영문, 숫자 8~16자)"
-        v-model="formData.id"
-        :rules="rules.id"
-        :loading="timers.id != null"
-        clearable
-      ></v-text-field>
-    </v-row>
+    <v-text-field
+      label="아이디"
+      v-model="formData.my_id.value"
+      :loading="formData.my_id.timer != null"
+      :error="!formData.my_id.validity.value && formData.my_id.validity.display"
+      @update:model-value="checkIdUniqueness()"
+      @update:focused="formData.my_id.tooltip = $event"
+      @blur="formData.my_id.validity.display = true"
+    >
+      <v-tooltip
+        activator="parent"
+        v-model="formData.my_id.tooltip"
+        :open-on-hover="false"
+        style="color: unset"
+      >
+        <custom-btn default-color="white">
+          <template v-slot:prepend>
+            <v-icon
+              class="mr-3"
+              :icon="validityIcon(formData.my_id.validity.length)"
+              :color="validityColor(formData.my_id.validity.length)"
+            ></v-icon>
+          </template>
+          8~16자 길이
+        </custom-btn>
+        <custom-btn default-color="white">
+          <template v-slot:prepend>
+            <v-icon
+              class="mr-3"
+              :icon="validityIcon(formData.my_id.validity.EngNumOnly)"
+              :color="validityColor(formData.my_id.validity.EngNumOnly)"
+            ></v-icon>
+          </template>
+          영문, 숫자만
+        </custom-btn>
+        <custom-btn default-color="white">
+          <template v-slot:prepend>
+            <v-icon
+              class="mr-3"
+              :class="{ 'mdi-spin': formData.my_id.timer != null }"
+              :icon="
+                formData.my_id.timer != null
+                  ? 'mdi-loading'
+                  : validityIcon(formData.my_id.validity.unique)
+              "
+              :color="
+                formData.my_id.timer != null
+                  ? 'white'
+                  : validityColor(formData.my_id.validity.unique)
+              "
+            ></v-icon>
+          </template>
+          {{
+            formData.my_id.timer != null
+              ? "확인중"
+              : formData.my_id.validity.unique
+              ? "사용 가능"
+              : formData.my_id.validity.unique == null
+              ? "중복 확인 필요"
+              : "이미 사용중인 아이디"
+          }}
+        </custom-btn>
+      </v-tooltip>
+    </v-text-field>
 
     <v-text-field
-      label="비밀번호 (영문, 숫자, 특수문자 포함 8~20자)"
-      type="password"
-      v-model="formData.pw"
-      :rules="rules.pw"
-      clearable
-    ></v-text-field>
+      label="비밀번호"
+      v-model="formData.pw.value"
+      :error="!formData.pw.validity.value && formData.pw.validity.display"
+      :type="formData.pw.visibility ? 'text' : 'password'"
+      :append-inner-icon="formData.pw.visibility ? 'mdi-eye-off' : 'mdi-eye'"
+      @click:append-inner="formData.pw.visibility = !formData.pw.visibility"
+      @update:focused="formData.pw.tooltip = $event"
+      @blur="formData.pw.validity.display = true"
+    >
+      <v-tooltip
+        activator="parent"
+        v-model="formData.pw.tooltip"
+        :open-on-hover="false"
+        style="color: unset"
+      >
+        <custom-btn default-color="white">
+          <template v-slot:prepend>
+            <v-icon
+              class="mr-3"
+              :icon="validityIcon(formData.pw.validity.length)"
+              :color="validityColor(formData.pw.validity.length)"
+            ></v-icon>
+          </template>
+          8~20자 길이
+        </custom-btn>
+        <custom-btn default-color="white">
+          <template v-slot:prepend>
+            <v-icon
+              class="mr-3"
+              :icon="validityIcon(formData.pw.validity.noOther)"
+              :color="validityColor(formData.pw.validity.noOther)"
+            ></v-icon>
+          </template>
+          영문, 숫자, 특수문자만
+        </custom-btn>
+        <custom-btn default-color="white">
+          <template v-slot:prepend>
+            <v-icon
+              class="mr-3"
+              :icon="validityIcon(formData.pw.validity.containEng)"
+              :color="validityColor(formData.pw.validity.containEng)"
+            ></v-icon>
+          </template>
+          영문 포함(대문자 또는 소문자)
+        </custom-btn>
+        <custom-btn default-color="white">
+          <template v-slot:prepend>
+            <v-icon
+              class="mr-3"
+              :icon="validityIcon(formData.pw.validity.containNum)"
+              :color="validityColor(formData.pw.validity.containNum)"
+            ></v-icon>
+          </template>
+          숫자 포함
+        </custom-btn>
+        <custom-btn default-color="white">
+          <template v-slot:prepend>
+            <v-icon
+              class="mr-3"
+              :icon="validityIcon(formData.pw.validity.containSC)"
+              :color="validityColor(formData.pw.validity.containSC)"
+            ></v-icon>
+          </template>
+          ! @ # $ % & * 중 하나 이상 포함
+        </custom-btn>
+      </v-tooltip>
+    </v-text-field>
+
     <v-text-field
       label="비밀번호 확인"
-      type="password"
-      v-model="formData.pwCheck"
-      :rules="rules.pwCheck"
-      clearable
-    ></v-text-field>
-
-    <v-row>
-      <v-text-field
-        label="이메일"
-        v-model="formData.email"
-        :rules="rules.email"
-        clearable
+      v-model="formData.pwConfirm.value"
+      :error="
+        !formData.pwConfirm.validity.value &&
+        formData.pwConfirm.validity.display
+      "
+      :type="formData.pwConfirm.visibility ? 'text' : 'password'"
+      :append-inner-icon="
+        formData.pwConfirm.visibility ? 'mdi-eye-off' : 'mdi-eye'
+      "
+      @click:append-inner="
+        formData.pwConfirm.visibility = !formData.pwConfirm.visibility
+      "
+      @update:focused="formData.pwConfirm.tooltip = $event"
+      @blur="formData.pwConfirm.validity.display = true"
+    >
+      <v-tooltip
+        activator="parent"
+        v-model="formData.pwConfirm.tooltip"
+        :open-on-hover="false"
+        style="color: unset"
       >
-      </v-text-field>
-      <!-- <v-btn class="form-btn" style="max-width: fit-content"> 인증 </v-btn> -->
-    </v-row>
+        <custom-btn default-color="white">
+          <template v-slot:prepend>
+            <v-icon
+              class="mr-3"
+              :icon="validityIcon(formData.pwConfirm.validity.value)"
+              :color="validityColor(formData.pwConfirm.validity.value)"
+            ></v-icon>
+          </template>
+          비밀번호 일치
+        </custom-btn>
+      </v-tooltip>
+    </v-text-field>
+
+    <v-tooltip
+      v-model="formData.email.tooltip"
+      right
+      :open-on-hover="false"
+      style="color: unset"
+    >
+      <template v-slot:activator="{ props }">
+        <v-combobox
+          label="이메일"
+          v-bind="props"
+          v-model="formData.email.value"
+          :items="formData.email.suggestions"
+          :loading="formData.email.timer != null"
+          :error="
+            !formData.email.validity.value && formData.email.validity.display
+          "
+          @update:model-value="chechEmailUniqueness()"
+          @focus="formData.email.tooltip = true"
+          @blur="
+            formData.email.tooltip = false;
+            formData.email.validity.display = true;
+          "
+        >
+        </v-combobox>
+      </template>
+      <custom-btn default-color="white">
+        <template v-slot:prepend>
+          <v-icon
+            class="mr-3"
+            :icon="validityIcon(formData.email.validity.format)"
+            :color="validityColor(formData.email.validity.format)"
+          ></v-icon>
+        </template>
+        이메일 형식 (example@example.com)
+      </custom-btn>
+    </v-tooltip>
+
     <v-checkbox
-      v-model="formData.termsAgreed"
-      :rules="rules.termsAgreed"
+      v-model="formData.termsAgreed.value"
+      :error="
+        !formData.termsAgreed.validity.value &&
+        formData.termsAgreed.validity.display
+      "
       color="primary"
-      density="compact"
+      @click="formData.termsAgreed.validity.display = true"
     >
       <template v-slot:label>
         <custom-btn class="px-0" weight="normal">
@@ -82,10 +286,21 @@
 
     <v-btn
       type="submit"
-      :disabled="!canSubmit || submitting"
+      block
+      :disabled="
+        formData.my_id.timer != null ||
+        formData.email.timer != null ||
+        !canSubmit
+      "
       :loading="submitting"
     >
-      {{ canSubmit ? "회원가입" : "항목을 모두 작성해야 해요" }}
+      {{
+        canSubmit
+          ? formData.my_id.timer != null || formData.email.timer != null
+            ? "정보를 확인하고 있어요"
+            : "회원가입"
+          : "항목을 모두 작성해야 해요"
+      }}
     </v-btn>
   </v-form>
 </template>
@@ -93,13 +308,31 @@
 <script setup>
 import CustomBtn from "@/components/CustomBtn.vue";
 
-import { ref, reactive, watch } from "vue";
-import Validator from "@/modules/validator";
+import { ref, reactive, computed } from "vue";
+import { onBeforeRouteLeave } from "vue-router";
+import {
+  lengthBetween,
+  KorEngNumOnly,
+  validName,
+  EngNumOnly,
+  validMyID,
+  containEng,
+  containNum,
+  containSC,
+  EngNumSCOnly,
+  validPW,
+  validEmail,
+  validityIcon,
+  validityColor,
+} from "@/modules/validator";
 import { API, apiRequest, parseResponse } from "@/modules/Services/API";
 import { useModalStore } from "@/store";
-import { modalPresets } from "@/store/modal.store";
-import router from "@/router";
-import { pages } from "@/router";
+import {
+  modalActions,
+  modalResponses,
+  modalPresets,
+} from "@/store/modal.store";
+import router, { pages } from "@/router";
 
 // Component
 const form = ref(null);
@@ -109,42 +342,99 @@ const modalStore = useModalStore();
 
 // Data
 const formData = reactive({
-  name: "",
-  id: "",
-  pw: "",
-  pwCheck: "",
-  email: "",
-  termsAgreed: false,
+  name: {
+    value: "",
+    tooltip: false,
+    validity: {
+      display: false,
+      length: computed(() => lengthBetween(formData.name.value, 2, 12)),
+      KorEngNumOnly: computed(() => KorEngNumOnly(formData.name.value)),
+      value: computed(() => validName(formData.name.value)),
+    },
+  },
+  my_id: {
+    value: "",
+    tooltip: false,
+    timer: null,
+    validity: {
+      display: false,
+      length: computed(() => lengthBetween(formData.my_id.value, 8, 16)),
+      EngNumOnly: computed(() => EngNumOnly(formData.my_id.value)),
+      unique: null,
+      value: computed(
+        () => validMyID(formData.my_id.value) && formData.my_id.validity.unique
+      ),
+    },
+  },
+  pw: {
+    value: "",
+    tooltip: false,
+    visibility: false,
+    validity: {
+      display: false,
+      length: computed(() => lengthBetween(formData.pw.value, 8, 20)),
+      containEng: computed(() => containEng(formData.pw.value)),
+      containNum: computed(() => containNum(formData.pw.value)),
+      containSC: computed(() => containSC(formData.pw.value)),
+      noOther: computed(() => EngNumSCOnly(formData.pw.value)),
+      value: computed(() => validPW(formData.pw.value)),
+    },
+  },
+  pwConfirm: {
+    value: "",
+    tooltip: false,
+    visibility: false,
+    validity: {
+      display: false,
+      value: computed(() => formData.pw.value === formData.pwConfirm.value),
+    },
+  },
+  email: {
+    value: "",
+    suggestions: computed(() => {
+      const value = formData.email.value;
+
+      if (value == null || value.trim().length == 0) return [];
+
+      const local = value.includes("@") ? value.match(/^[^@]+/) : value;
+      const domains = [
+        "@korea.ac.kr",
+        "@naver.com",
+        "@gmail.com",
+        "@daum.net",
+        "@hanmail.net",
+        "@nate.com",
+      ];
+
+      return domains.map((domain) => local + domain);
+    }),
+    tooltip: false,
+    timer: null,
+    validity: {
+      display: false,
+      format: computed(() => validEmail(formData.email.value)),
+      unique: null,
+      value: computed(
+        () => validEmail(formData.email.value) && formData.email.validity.unique
+      ),
+    },
+  },
+  termsAgreed: {
+    value: false,
+    validity: {
+      display: false,
+      value: computed(() => formData.termsAgreed.value),
+    },
+  },
 });
-const rules = {
-  name: [(v) => (validity.name = Validator.validateName(v))],
-  id: [
-    (v) => (validity.id = Validator.validateID(v)),
-    async (v) => (validity.id = await uniqueID(v)),
-  ],
-  pw: [(v) => (validity.pw = Validator.validatePW(v))],
-  pwCheck: [
-    (v) =>
-      (validity.pwCheck =
-        v === formData.pw || "비밀번호 확인이 일치하지 않아요"),
-  ],
-  /**
-   * TODO 이메일 중복체크 추가
-   */
-  email: [(v) => (validity.email = Validator.validateEmail(v))],
-  termsAgreed: [(v) => (validity.termsAgreed = v || "필수 항목이에요")],
-};
-const timers = reactive({ id: null, email: null });
-let validity = reactive({
-  name: "",
-  id: "",
-  pw: "",
-  pwCheck: "",
-  email: "",
-  termsAgreed: "",
-});
-const canSubmit = ref(false);
+const canSubmit = computed(() =>
+  Object.values(formData).reduce(
+    (accum, field) => accum && field.validity.value,
+    true
+  )
+);
 const submitting = ref(false);
+const completed = ref(false);
 
 /**
  * TODO 실제 약관으로 변경
@@ -157,72 +447,107 @@ const ipsum =
   "쉬이 노루, 이제 봅니다. 써 지나가는 계절이 까닭이요, 버리었습니다. 차 프랑시스 이웃 거외다. 슬퍼하는 많은 별 소학교 헤는 봅니다. 같이 별들을 마디씩 이름을 많은 계십니다. 나는 이름을 밤이 아이들의 아스라히 겨울이 있습니다.";
 const panels = reactive([0, 1]);
 
-// Watch
-watch(validity, async () => {
-  canSubmit.value = await Object.values(validity).reduce(
-    (accum, value) => accum && typeof value == "boolean",
-    true
+// Navigation guards
+onBeforeRouteLeave(async (to, from, next) => {
+  if (completed.value) return next();
+  if (
+    !formData.name.value &&
+    !formData.my_id.value &&
+    !formData.pw.value &&
+    !formData.pwConfirm.value &&
+    !formData.email.value
+  )
+    return next();
+
+  let confirm = await modalStore.openModal(
+    "회원가입을 중단하시겠습니까?\n입력한 내용은 사라집니다.",
+    null,
+    {
+      actions: [
+        {
+          label: "예",
+          response: modalResponses.Yes,
+          color: "error",
+        },
+        modalActions.No,
+      ],
+    }
   );
+
+  if (confirm === modalResponses.Yes) return next();
+  else next(false);
 });
 
 // Methods
-const uniqueID = async () => {
-  return new Promise((resolve) => {
-    clearTimeout(timers.id);
+const checkIdUniqueness = () => {
+  new Promise((resolve, reject) => {
+    clearTimeout(formData.my_id.timer);
 
-    timers.id = setTimeout(() => {
-      apiRequest(API.CheckExistingID, { my_id: formData.id })
+    if (formData.my_id.value?.length == 0) reject();
+
+    formData.my_id.timer = setTimeout(() => {
+      apiRequest(API.CheckExistingID, { my_id: formData.my_id.value })
         .then(parseResponse)
         .then((response) => {
-          /**
-           * TODO API 고쳐지면 기준값 반전
-           */
-          if (!response[API.CheckExistingID])
-            resolve("이미 사용중인 아이디예요");
+          if (response[API.CheckExistingID]) resolve(false);
           else resolve(true);
         })
-        .catch(() => {
-          resolve("오류가 발생했어요");
-        })
-        .finally(() => {
-          timers.id = null;
-        });
+        .catch(() => reject());
     }, 250);
-  });
+  })
+    .then((uniqueness) => (formData.my_id.validity.unique = uniqueness))
+    .catch(() => (formData.my_id.validity.unique = null))
+    .finally(() => (formData.my_id.timer = null));
 };
+const chechEmailUniqueness = async () => {
+  new Promise((resolve, reject) => {
+    clearTimeout(formData.email.timer);
 
-const submit = () => {
-  submitting.value = true;
-  form.value
-    ?.validate()
-    .then((result) => {
-      if (!result.valid) return;
+    if (formData.email.value?.length == 0) reject();
 
-      apiRequest(
-        API.SignUp,
-        {
-          name: formData.name,
-          my_id: formData.id,
-          password: formData.pw,
-          email: formData.email,
-        },
-        "id"
-      )
-        .then(async () => {
-          await modalStore.openModal(
-            "회원가입에 성공했습니다.\n로그인 화면으로 이동합니다.",
-            null,
-            { actions: modalPresets.OK, persistent: true }
-          );
-          router.push({ name: pages.Login });
+    formData.email.timer = setTimeout(() => {
+      apiRequest(API.CheckExistingEmail, { email: formData.email.value })
+        .then(parseResponse)
+        .then((response) => {
+          if (response[API.CheckExistingEmail]) resolve(false);
+          else resolve(true);
         })
-        .catch(async () => {
-          await modalStore.openModal(
-            "오류가 발생했습니다.\n잠시 뒤에 다시 시도하거나 관리자에게 문의해주세요.",
-            null,
-            { actions: modalPresets.OK, persistent: true }
-          );
-        });
+        .catch(() => reject());
+    }, 250);
+  })
+    .then((uniqueness) => (formData.email.validity.unique = uniqueness))
+    .catch(() => (formData.email.validity.unique = null))
+    .finally(() => (formData.email.timer = null));
+};
+const submit = () => {
+  if (!canSubmit.value) return;
+  submitting.value = true;
+
+  apiRequest(
+    API.SignUp,
+    {
+      name: formData.name.value,
+      my_id: formData.my_id.value,
+      password: formData.pw.value,
+      email: formData.email.value,
+    },
+    "id"
+  )
+    .then(async () => {
+      completed.value = true;
+      await modalStore.openModal(
+        "회원가입에 성공했습니다.\n로그인 화면으로 이동합니다.",
+        null,
+        { actions: modalPresets.OK }
+      );
+      router.push({ name: pages.Login.name });
+    })
+    .catch(async () => {
+      await modalStore.openModal(
+        "오류가 발생했습니다.\n잠시 뒤에 다시 시도하거나 관리자에게 문의해주세요.",
+        null,
+        { actions: modalPresets.OK }
+      );
     })
     .finally(() => (submitting.value = false));
 };
@@ -230,18 +555,14 @@ const submit = () => {
 
 <style scoped>
 .v-text-field {
-  flex-grow: 1;
   margin-bottom: 1rem;
 }
 
-.v-btn {
-  width: 100%;
+.test-good {
+  box-shadow: 0 0 5px 3px #ff7171;
 }
 
-.form-btn {
-  flex: 0 0;
-  width: fit-content;
-  margin: 0 0 16px 12px;
-  align-self: flex-start;
+.test-error {
+  box-shadow: 0 0 10px 2px #ff7171;
 }
 </style>

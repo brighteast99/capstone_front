@@ -588,7 +588,7 @@ const fontSize = computed({
 const fontColor = computed({
   get: () => {
     const color = editor.value?.getAttributes("textStyle").color;
-    if (color === null || color === "") return "#000000";
+    if (color == null || color === "") return "#000000";
     return color;
   },
   set: (value) => {
@@ -719,7 +719,7 @@ const insertImage = async () => {
   let url;
 
   if (imageFormData.sourceIsURL) {
-    if (imageFormData.url === null || imageFormData.url.trim() === "") {
+    if (imageFormData.url == null || imageFormData.url.trim() === "") {
       menuMVs.Image = false;
       return;
     }
@@ -738,14 +738,14 @@ const insertImage = async () => {
 };
 const insertLink = () => {
   const url = linkFormData.url;
-  if (url === null || url.trim() === "") {
+  if (url == null || url.trim() === "") {
     menuMVs.Link = false;
     return;
   }
 
   let name = linkFormData.name;
   const { from, to } = editor.value?.state.selection;
-  if (linkFormData.name === null || linkFormData.name?.length == 0) {
+  if (linkFormData.name == null || linkFormData.name?.length == 0) {
     name =
       from == to
         ? linkFormData.url

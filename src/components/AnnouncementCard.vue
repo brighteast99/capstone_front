@@ -8,7 +8,7 @@
       <custom-btn
         class="announce-title-btn"
         :to="{
-          name: pages.ViewPost,
+          name: pages.ViewPost.name,
           params: { boardId: 'announcements', postId: currentAnnounce?.postId },
         }"
       >

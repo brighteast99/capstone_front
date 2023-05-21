@@ -1,6 +1,7 @@
 import { reactive, computed } from "vue";
 import { defineStore } from "pinia";
 import { API, apiRequest, parseResponse } from "@/modules/Services/API";
+import router, { pages } from "@/router";
 
 export const useSystemStore = defineStore(
   "system",
@@ -23,6 +24,7 @@ export const useSystemStore = defineStore(
             if (loginData == null) resolve(false);
             else {
               Object.assign(currentUser, loginData);
+              currentUser.id = Number(currentUser.id);
               resolve(true);
             }
           })
@@ -34,6 +36,9 @@ export const useSystemStore = defineStore(
       currentUser.id = null;
       currentUser.name = null;
       currentUser.email = null;
+
+      if (pages[router.currentRoute.value.name].needLogin)
+        router.replace({ name: pages.Main.name });
     };
 
     return { currentUser, loggedIn, login, logOut };

@@ -5,7 +5,7 @@
       @mouseenter="isHover = true"
       @mouseleave="isHover = false"
     >
-      <div :style="{ color: fontColor, marginLeft: 'auto' }">
+      <div :style="{ color: fontColor, marginRight: 'auto' }">
         <slot name="prepend"></slot>
       </div>
       <button class="px-0" :style="style" @click="route">

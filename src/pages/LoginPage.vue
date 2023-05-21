@@ -11,9 +11,9 @@
         <v-form ref="loginForm" style="width: 100%" @submit.prevent="login">
           <v-row>
             <v-text-field
-              v-model="formData.id"
+              v-model="formData.my_id"
               label="아이디"
-              :rules="rules.id"
+              :error="false"
             ></v-text-field>
           </v-row>
           <v-row>
@@ -21,7 +21,7 @@
               v-model="formData.pw"
               label="비밀번호"
               type="password"
-              :rules="rules.pw"
+              :error="false"
             ></v-text-field>
           </v-row>
           <v-row>
@@ -36,12 +36,12 @@
             </v-btn>
           </v-row>
           <v-row>
-            <v-checkbox
+            <!-- <v-checkbox
               label="로그인 유지(미구현)"
               color="primary"
               hide-details
               density="compact"
-            ></v-checkbox>
+            ></v-checkbox> -->
           </v-row>
         </v-form>
 
@@ -50,7 +50,7 @@
           <custom-btn
             class="pl-0 pr-1"
             weight="bold"
-            :to="{ name: pages.FindUID }"
+            :to="{ name: pages.FindUID.name }"
           >
             아이디
           </custom-btn>
@@ -61,7 +61,7 @@
             <custom-btn
               class="pl-1 pr-0"
               weight="bold"
-              :to="{ name: pages.FindPW }"
+              :to="{ name: pages.FindPW.name }"
             >
               비밀번호
             </custom-btn>
@@ -76,7 +76,7 @@
             <custom-btn
               class="pr-0"
               weight="bold"
-              :to="{ name: pages.Register }"
+              :to="{ name: pages.Register.name }"
             >
               계정이 없어요
             </custom-btn>
@@ -94,9 +94,8 @@ import { ref, reactive } from "vue";
 import { useSystemStore, useModalStore } from "@/store";
 import { modalPresets } from "@/store/modal.store";
 import LogoGroup from "@/components/LogoGroup.vue";
-import router from "@/router";
-import { pages } from "@/router";
-import validator from "@/modules/validator";
+import router, { pages } from "@/router";
+import { validMyID, validPW } from "@/modules/validator";
 
 // Styles
 const defaults = {
@@ -124,37 +123,37 @@ const modalStore = useModalStore();
 
 // Data
 const formData = reactive({
-  id: "",
+  my_id: "",
   pw: "",
 });
-const rules = {
-  id: [(v) => validator.validateID(v)],
-  pw: [(v) => validator.validatePW(v)],
-};
 const loggingIn = ref(false);
 
 // Methods
-const login = () => {
+const login = async () => {
   loggingIn.value = true;
-  loginForm.value
-    .validate()
-    .then((result) => {
-      if (!result.valid) return loginFailed();
+  if (!validMyID(formData.my_id) || !validPW(formData.pw)) {
+    await loginFailed();
+    loggingIn.value = false;
+    return;
+  }
 
-      systemStore
-        .login({ my_id: formData.id, password: formData.pw })
-        .then((result) => {
-          if (result) router.push({ name: pages.Main });
-        })
-        .catch(() => loginFailed());
+  systemStore
+    .login({ my_id: formData.my_id, password: formData.pw })
+    .then((result) => {
+      if (result) router.push({ name: pages.Main.name });
     })
+    .catch(async () => await loginFailed())
     .finally(() => (loggingIn.value = false));
 };
 
 const loginFailed = async () => {
-  modalStore.openModal("아이디 또는 비밀번호가 올바르지 않습니다.", null, {
-    actions: modalPresets.OK,
-  });
+  await modalStore.openModal(
+    "아이디 또는 비밀번호가 올바르지 않습니다.",
+    null,
+    {
+      actions: modalPresets.OK,
+    }
+  );
 };
 </script>
 

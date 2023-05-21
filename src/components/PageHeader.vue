@@ -17,19 +17,19 @@
           >
             게시판
           </custom-btn>
-          <custom-btn weight="bold" :to="{ name: pages.Search }"
+          <custom-btn weight="bold" :to="{ name: pages.Search.name }"
             >검색</custom-btn
           >
 
           <v-spacer></v-spacer>
 
           <!-- Login menu -->
-          <div v-if="!systemStore.loggedIn" class="row">
+          <div v-if="!loggedIn" class="row">
             <v-btn
               variant="outlined"
               size="small"
               color="primary"
-              :to="{ name: pages.Login }"
+              :to="{ name: pages.Login.name }"
               style="margin-right: 10px"
             >
               로그인
@@ -38,7 +38,7 @@
               variant="flat"
               size="small"
               color="primary"
-              :to="{ name: pages.Register }"
+              :to="{ name: pages.Register.name }"
             >
               회원가입
             </v-btn>
@@ -208,7 +208,7 @@
                   class="mb-1"
                   default-color="white"
                   :to="{
-                    name: pages.PostList,
+                    name: pages.PostList.name,
                     params: { boardId: board.boardId },
                   }"
                   :size="16"
@@ -262,6 +262,7 @@ import LogoGroup from "@/components/LogoGroup.vue";
 
 import { reactive, computed } from "vue";
 import { useSystemStore, useModalStore } from "@/store";
+import { storeToRefs } from "pinia";
 import { modalResponses } from "@/store/modal.store";
 import { pages } from "@/router";
 
@@ -285,10 +286,10 @@ const defaults = {
 
 // Pinia Storage
 const systemStore = useSystemStore();
+const { loggedIn, currentUser } = storeToRefs(systemStore);
 const modalStore = useModalStore();
 
 // Data
-const currentUser = computed(() => systemStore.currentUser);
 const position = reactive({ left: true, right: false });
 const categories = [
   [
@@ -321,19 +322,19 @@ const items = [
       title: "내 정보",
       value: 1,
       appendIcon: "mdi-account-circle",
-      routeName: pages.UserInfo,
+      routeName: pages.UserInfo.name,
     },
     {
       title: "작성글 목록",
       value: 3,
       appendIcon: "mdi-newspaper-variant-multiple",
-      routeName: pages.UserPosts,
+      routeName: pages.UserPosts.name,
     },
     {
       title: "관심글 목록",
       value: 4,
       appendIcon: "mdi-bookmark-multiple",
-      routeName: pages.UserBookmarks,
+      routeName: pages.UserBookmarks.name,
     },
   ],
 ];
@@ -348,7 +349,7 @@ const logout = async () => {
         { label: "로그아웃", color: "error" },
         { label: "취소", response: modalResponses.Cancel, color: "black" },
       ],
-    })) == modalResponses.Cancel
+    })) === modalResponses.Cancel
   )
     return;
 

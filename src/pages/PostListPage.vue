@@ -6,7 +6,7 @@
       <v-spacer></v-spacer>
       <custom-btn
         size="small"
-        :to="{ name: pages.NewPost, params: { boardId: props.boardId } }"
+        :to="{ name: pages.NewPost.name, params: { boardId: props.boardId } }"
       >
         게시글 작성
       </custom-btn>
@@ -27,7 +27,7 @@
           <v-list-item v-for="post in posts" :key="post">
             <custom-btn
               :to="{
-                name: pages.ViewPost,
+                name: pages.ViewPost.name,
                 params: { boardId: props.boardId, postId: post.postId },
               }"
             >
@@ -75,7 +75,6 @@ const props = defineProps({
 
 // Hook
 onMounted(() => {
-  // console.log(...developStore.posts);
   posts.push(...developStore.posts);
 });
 </script>

@@ -9,12 +9,21 @@
 
         <!-- Form area -->
         <v-row>
-          <router-view></router-view>
+          <router-view @completed="displayHelp = !$event"></router-view>
         </v-row>
 
         <!-- Help area -->
-        <v-row class="mt-3" justify="start" style="font-size: 0.9em">
-          <custom-btn class="pl-0" weight="normal" :to="{ name: pages.Login }">
+        <v-row
+          v-if="displayHelp"
+          class="mt-3"
+          justify="start"
+          style="font-size: 0.9em"
+        >
+          <custom-btn
+            class="pl-0"
+            weight="normal"
+            :to="{ name: pages.Login.name }"
+          >
             <template v-slot:prepend>
               <v-icon icon="mdi-chevron-left"></v-icon>
             </template>
@@ -30,13 +39,25 @@
 import CustomBtn from "@/components/CustomBtn.vue";
 import LogoGroup from "@/components/LogoGroup.vue";
 
+import { ref } from "vue";
 import { pages } from "@/router";
 
 const defaults = {
   VTextField: {
     variant: "solo",
     density: "compact",
-    hideDetails: "auto",
+    hideDetails: true,
+    clearable: true,
+  },
+  VCombobox: {
+    variant: "solo",
+    density: "compact",
+    clearable: true,
+    hideDetails: true,
+  },
+  VCheckbox: {
+    hideDetails: true,
+    density: "compact",
   },
   VRow: {
     justify: "center",
@@ -50,6 +71,8 @@ const defaults = {
     color: "primary",
   },
 };
+
+const displayHelp = ref(true);
 </script>
 
 <style scoped></style>

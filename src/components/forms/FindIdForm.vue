@@ -21,14 +21,7 @@
   <template v-else>
     <v-card class="result-card">
       <v-card-text class="result-card-text">
-        <custom-btn class="copy-btn" size="x-small" @click="copyID">
-          <v-icon icon="mdi-content-copy"> </v-icon>
-          <v-tooltip activator="parent">
-            {{ tooltipTimer == null ? "클립보드에 복사" : "복사되었습니다!" }}
-          </v-tooltip>
-        </custom-btn>
-
-        <span class="result-text">{{ states.my_id }}</span>
+        {{ states.my_id }}
       </v-card-text>
 
       <v-card-actions>
@@ -52,9 +45,7 @@
 </template>
 
 <script setup>
-import CustomBtn from "../CustomBtn.vue";
-
-import { reactive, ref, computed, defineEmits, watchEffect } from "vue";
+import { reactive, computed, defineEmits, watchEffect } from "vue";
 import { parseResponse } from "@/modules/Services/API";
 import { apiRequest, API } from "@/modules/Services/API";
 import { validEmail } from "@/modules/validator";
@@ -73,7 +64,6 @@ const states = reactive({
   my_id: null,
   found: computed(() => states.my_id != null),
 });
-const tooltipTimer = ref(null);
 
 // Emits
 const emits = defineEmits(["completed"]);
@@ -105,13 +95,6 @@ const submit = () => {
         )
     )
     .finally(() => (states.loading = false));
-};
-
-const copyID = () => {
-  navigator.clipboard.writeText(states.my_id);
-  tooltipTimer.value = setTimeout(() => {
-    tooltipTimer.value = null;
-  }, 1000);
 };
 </script>
 

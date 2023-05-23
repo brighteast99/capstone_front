@@ -14,6 +14,7 @@
               v-model="formData.my_id"
               label="아이디"
               :error="false"
+              autofocus
             ></v-text-field>
           </v-row>
           <v-row>
@@ -31,6 +32,7 @@
               color="primary"
               :disabled="loggingIn"
               :loading="loggingIn"
+              :onmousedown="adminLogin.init"
             >
               로그인
             </v-btn>
@@ -47,15 +49,17 @@
 
         <!-- Help area -->
         <v-row class="mt-3" style="font-size: 0.9em">
-          <custom-btn
-            class="pl-0 pr-1"
-            weight="bold"
-            :to="{ name: pages.FindUID.name }"
-          >
-            아이디
-          </custom-btn>
           <v-col>
-            <p class="text-disabled">/</p>
+            <custom-btn
+              class="pl-0 pr-1"
+              weight="bold"
+              :to="{ name: pages.FindUID.name }"
+            >
+              아이디
+            </custom-btn>
+          </v-col>
+          <v-col>
+            <span class="text-disabled">/</span>
           </v-col>
           <v-col>
             <custom-btn
@@ -67,7 +71,7 @@
             </custom-btn>
           </v-col>
           <v-col>
-            <p class="text-disabled">를 잊어버렸어요</p>
+            <span class="text-disabled">가 기억나지 않아요</span>
           </v-col>
 
           <v-spacer></v-spacer>
@@ -78,7 +82,7 @@
               weight="bold"
               :to="{ name: pages.Register.name }"
             >
-              계정이 없어요
+              아직 계정이 없어요
             </custom-btn>
           </v-col>
         </v-row>
@@ -127,11 +131,29 @@ const formData = reactive({
   pw: "",
 });
 const loggingIn = ref(false);
+const adminLogin = reactive({
+  value: false,
+  timer: null,
+  init: () => {
+    adminLogin.clear();
+    adminLogin.timer = setTimeout(() => {
+      adminLogin.value = true;
+    }, 1000);
+  },
+  clear: () => {
+    clearTimeout(adminLogin.timer);
+    adminLogin.timer = null;
+    adminLogin.value = false;
+  },
+});
 
 // Methods
 const login = async () => {
   loggingIn.value = true;
-  if (!validMyID(formData.my_id) || !validPW(formData.pw)) {
+  if (
+    !adminLogin.value &&
+    (!validMyID(formData.my_id) || !validPW(formData.pw))
+  ) {
     await loginFailed();
     loggingIn.value = false;
     return;
@@ -139,11 +161,21 @@ const login = async () => {
 
   systemStore
     .login({ my_id: formData.my_id, password: formData.pw })
-    .then((result) => {
+    .then(async (result) => {
       if (result) router.push({ name: pages.Main.name });
+      else await loginFailed();
     })
-    .catch(async () => await loginFailed())
-    .finally(() => (loggingIn.value = false));
+    .catch(async () => {
+      await modalStore.openModal(
+        "오류가 발생했습니다.\n 나중에 다시 시도하거나 관리자에게 문의해주세요.",
+        null,
+        { actions: modalPresets.OK }
+      );
+    })
+    .finally(() => {
+      loggingIn.value = false;
+      adminLogin.clear();
+    });
 };
 
 const loginFailed = async () => {

@@ -242,6 +242,33 @@
         </template>
         이메일 형식 (example@example.com)
       </custom-btn>
+      <custom-btn default-color="white">
+        <template v-slot:prepend>
+          <v-icon
+            class="mr-3"
+            :class="{ 'mdi-spin': formData.email.timer != null }"
+            :icon="
+              formData.email.timer != null
+                ? 'mdi-loading'
+                : validityIcon(formData.email.validity.unique)
+            "
+            :color="
+              formData.email.timer != null
+                ? 'white'
+                : validityColor(formData.email.validity.unique)
+            "
+          ></v-icon>
+        </template>
+        {{
+          formData.email.timer != null
+            ? "확인중"
+            : formData.email.validity.unique
+            ? "사용 가능"
+            : formData.email.validity.unique == null
+            ? "가입하지 않은 이메일"
+            : "이미 가입한 이메일"
+        }}
+      </custom-btn>
     </v-tooltip>
 
     <v-checkbox

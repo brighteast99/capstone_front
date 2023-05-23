@@ -10,12 +10,13 @@
         {{ data.title }}
       </v-card-title>
 
-      <v-card-text class="modal-content">
+      <span class="modal-content">
         {{ data.content }}
-      </v-card-text>
+      </span>
 
       <v-card-actions class="modal-actions">
         <custom-btn
+          class="modal-action"
           v-for="action in options.actions"
           :key="action"
           :color="action.color ?? undefined"
@@ -53,8 +54,7 @@ const onClickOutside = () => {
 
 <style scoped>
 .v-card {
-  min-width: 10rem;
-  max-width: 50dvw;
+  min-width: 20rem;
   margin: auto;
 }
 
@@ -65,10 +65,15 @@ const onClickOutside = () => {
 .modal-content {
   white-space: pre;
   text-align: center;
+  padding: 2em 1em 1.5em 1em;
 }
 
 .modal-actions {
   padding: 0 3em 0 3em;
-  justify-content: space-around;
+}
+
+.modal-action {
+  flex: 1 1;
+  width: 20%;
 }
 </style>

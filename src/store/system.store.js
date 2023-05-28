@@ -37,8 +37,8 @@ export const useSystemStore = defineStore(
       currentUser.name = null;
       currentUser.email = null;
 
-      if (pages[router.currentRoute.value.name].needLogin)
-        router.replace({ name: pages.Main.name });
+      if (router.currentRoute.value.meta.requireLogin)
+        router.replace({ name: pages.Main });
     };
 
     return { currentUser, loggedIn, login, logOut };

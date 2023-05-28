@@ -4,7 +4,7 @@
     class="mt-5 pl-0 mb-1"
     @click="
       router.push({
-        name: pages.PostList.name,
+        name: pages.PostList,
         params: { boardId: props.boardId },
       })
     "
@@ -12,8 +12,9 @@
     <template v-slot:prepend>
       <v-icon icon="mdi-chevron-left"></v-icon>
     </template>
-    {{ " 게시글 목록으로" }}
+    {{ props.boardId }}
   </custom-btn>
+
   <v-card class="mx-auto mb-5 pa-3" :class="{ 'mt-10': isEditmode }">
     <template v-if="isEditmode">
       <v-card-title class="pa-5 pb-0">
@@ -29,7 +30,7 @@
       </v-card-title>
 
       <v-card-text class="py-0">
-        <text-editor v-model="postData.content" :editable="true" />
+        <text-editor v-model="postData.content" :edit-mode="true" />
       </v-card-text>
 
       <v-card-actions>
@@ -52,7 +53,7 @@
             <custom-btn
               weight="bold"
               :to="{
-                name: pages.UserInfo.name,
+                name: pages.UserInfo,
                 params: { userId: postData.writer?.id },
               }"
             >
@@ -70,7 +71,7 @@
       <v-divider></v-divider>
 
       <v-card-text class="pa-0">
-        <text-editor v-model="postData.content" :editable="false" />
+        <text-editor v-model="postData.content" :edit-mode="false" />
       </v-card-text>
 
       <v-card-actions v-if="isUsersPost">
@@ -134,7 +135,7 @@ import {
   reactive,
   computed,
   defineProps,
-  onMounted,
+  onBeforeMount,
   onBeforeUnmount,
 } from "vue";
 import { onBeforeRouteLeave, onBeforeRouteUpdate } from "vue-router";
@@ -164,8 +165,8 @@ const commentForm = ref(null);
 let intendedLeaving = false;
 const isEditmode = computed(
   () =>
-    router.currentRoute.value.name === pages.EditPost.name ||
-    router.currentRoute.value.name === pages.NewPost.name
+    router.currentRoute.value.name === pages.EditPost ||
+    router.currentRoute.value.name === pages.NewPost
 );
 const isEdited = computed(
   () =>
@@ -187,7 +188,7 @@ const postData = reactive({
   title: "",
   date: null,
   modifyDate: null,
-  content: undefined,
+  content: null,
 });
 let postData_backup = {
   title: "",
@@ -217,15 +218,15 @@ const props = defineProps({
 });
 
 // Hooks
-onMounted(() => {
+onBeforeMount(() => {
   if (props.postId) {
     /**
      * TODO 서버에서 게시글 불러오기. 자기 글인지 체크해서 수정중이면 나가리, 아니면 state에 글 정보 저장
      */
     Object.assign(postData, developStore.postData);
+    postData_backup.title = postData.title;
+    postData_backup.content = postData.content;
   } else Object.assign(postData.writer, systemStore.currentUser);
-  postData_backup.title = postData.title;
-  postData_backup.content = postData.content;
 
   if (isEditmode.value) {
     window.addEventListener("beforeunload", beforeunloadEvent);
@@ -245,7 +246,7 @@ onBeforeRouteLeave(async (to, from, next) => {
 
   let confirm = await modalStore.openModal(
     `페이지를 벗어나시겠습니까?\n${
-      router.currentRoute.value.name == pages.EditPost.name ? "수정" : "작성"
+      router.currentRoute.value.name == pages.EditPost ? "수정" : "작성"
     }중인 내용은 저장되지 않습니다.`,
     null,
     {
@@ -288,7 +289,7 @@ onBeforeRouteUpdate(async () => {
 // Methods
 const startEdit = async () => {
   router.push({
-    name: pages.EditPost.name,
+    name: pages.EditPost,
     params: router.currentRoute.value.params,
   });
 };
@@ -324,14 +325,14 @@ const deletePost = async () => {
       actions: modalPresets.OK,
     });
     router.push({
-      name: pages.PostList.name,
+      name: pages.PostList,
       params: { boardId: props.boardId },
     });
   }
   //삭제 실패시
   // {
   //   await modalStore.openModal(
-  //     "삭제에 실패했습니다.\n다시 시도하거나 관리자에게 문의해주세요.",
+  //     "삭제에 실패했습니다.\n다시 시도하거나 관리자에게 문의 바랍니다.",
   //     null,
   //     { actions: modalPresets.OK }
   //   );
@@ -361,7 +362,7 @@ const cancel = async () => {
   intendedLeaving = true;
   if (props.postId)
     router.push({
-      name: pages.ViewPost.name,
+      name: pages.ViewPost,
       params: router.currentRoute.value.params,
     });
 };
@@ -400,14 +401,14 @@ const post = async () => {
     const postId = 1234; //서버에서 받아온 postId;
     intendedLeaving = true;
     router.replace({
-      name: pages.ViewPost.name,
+      name: pages.ViewPost,
       params: { boardId: props.boardId, postId: props.postId ?? postId },
     });
   }
   //등록 실패
   // {
   //   await modalStore.openModal(
-  //     `게시물 ${operation}에 실패하였습니다.\n다시 시도하거나 관리자에게 문의해주세요.`,
+  //     `게시물 ${operation}에 실패하였습니다.\n다시 시도하거나 관리자에게 문의 바랍니다.`,
   //      null,
   //     `${operation} 실패`,
   //     { actions: actionPresets.OK }

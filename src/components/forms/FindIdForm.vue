@@ -28,14 +28,14 @@
         <v-btn
           variant="flat"
           style="flex: 1"
-          @click="router.push({ name: pages.Login.name })"
+          @click="router.push({ name: pages.Login })"
         >
           로그인하러 가기
         </v-btn>
         <v-btn
           variant="outlined"
           style="flex: 1"
-          @click="router.push({ name: pages.FindPW.name })"
+          @click="router.push({ name: pages.FindPW })"
         >
           비밀번호 찾기
         </v-btn>
@@ -89,7 +89,7 @@ const submit = () => {
     .catch(
       async () =>
         await modalStore.openModal(
-          "오류가 발생했습니다.\n나중에 다시 시도하거나 관리자에게 문의해주세요.",
+          "오류가 발생했습니다.\n나중에 다시 시도하거나 관리자에게 문의 바랍니다.",
           null,
           { actions: modalPresets.OK }
         )

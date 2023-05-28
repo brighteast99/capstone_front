@@ -6,7 +6,7 @@
       <v-spacer></v-spacer>
       <custom-btn
         size="small"
-        :to="{ name: pages.NewPost.name, params: { boardId: props.boardId } }"
+        :to="{ name: pages.NewPost, params: { boardId: props.boardId } }"
       >
         게시글 작성
       </custom-btn>
@@ -26,8 +26,10 @@
         <v-list density="compact">
           <v-list-item v-for="post in posts" :key="post">
             <custom-btn
+              size="medium"
+              defaultColor="black"
               :to="{
-                name: pages.ViewPost.name,
+                name: pages.ViewPost,
                 params: { boardId: props.boardId, postId: post.postId },
               }"
             >
@@ -35,6 +37,20 @@
                 {{ post.title }}
               </p>
             </custom-btn>
+
+            <template v-slot:append>
+              <div class="d-flex">
+                <custom-btn
+                  :to="{
+                    name: pages.UserInfo,
+                    params: { userId: post.writer.id },
+                  }"
+                >
+                  {{ post.writer.name }}
+                </custom-btn>
+                <p>{{ post.date.toLocaleDateString() }}</p>
+              </div>
+            </template>
           </v-list-item>
         </v-list>
       </template>
@@ -58,7 +74,7 @@
 <script setup>
 import CustomBtn from "@/components/CustomBtn.vue";
 
-import { defineProps, reactive, onMounted } from "vue";
+import { defineProps, reactive, onBeforeMount } from "vue";
 import { pages } from "@/router";
 import { useDevelopStore } from "@/store";
 
@@ -74,7 +90,7 @@ const props = defineProps({
 });
 
 // Hook
-onMounted(() => {
+onBeforeMount(() => {
   posts.push(...developStore.posts);
 });
 </script>

@@ -1,7 +1,7 @@
 <template>
   <v-defaults-provider :defaults="defaults">
     <!-- Menu area-->
-    <div class="wysiwyg-menu" v-if="props.editable">
+    <div class="wysiwyg-menu" v-if="props.editMode">
       <v-spacer></v-spacer>
 
       <!-- Font -->
@@ -455,7 +455,7 @@
     </div>
 
     <!-- Editor area -->
-    <editor-content :editor="editor" :class="{ editing: props.editable }" />
+    <editor-content :editor="editor" :class="{ editing: props.editMode }" />
   </v-defaults-provider>
 </template>
 
@@ -471,7 +471,7 @@ import {
   defineEmits,
   watch,
   watchEffect,
-  onMounted,
+  onBeforeMount,
   onUnmounted,
 } from "vue";
 
@@ -655,13 +655,13 @@ const floatMenu = computed(() =>
 // Props & Emits
 const props = defineProps({
   modelValue: Object,
-  editable: Boolean,
+  editMode: Boolean,
 });
 const emit = defineEmits(["update:modelValue"]);
 
 // watches
 watch(
-  () => props.editable,
+  () => props.editMode,
   (value) => {
     editor.value?.setEditable(value);
   }
@@ -680,7 +680,7 @@ watch(
   }
 );
 watchEffect(() => {
-  if (props.editable) editor.value?.setEditable(!floatMenu.value);
+  if (props.editMode) editor.value?.setEditable(!floatMenu.value);
 
   if (!menuMVs.Image) imageForm.value?.reset();
 
@@ -692,7 +692,7 @@ watchEffect(() => {
 });
 
 // Hook
-onMounted(() => {
+onBeforeMount(() => {
   editor.value?.commands.setContent(props.modelValue);
 });
 onUnmounted(() => {
@@ -779,9 +779,6 @@ const insertLink = () => {
   outline: 0px solid transparent;
   padding: 16px;
 
-  p {
-    line-height: 1.3;
-  }
   ul,
   ol {
     padding-left: 1.5em;

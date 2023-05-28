@@ -17,7 +17,7 @@
           >
             게시판
           </custom-btn>
-          <custom-btn weight="bold" :to="{ name: pages.Search.name }"
+          <custom-btn weight="bold" :to="{ name: pages.Search }"
             >검색</custom-btn
           >
 
@@ -29,7 +29,7 @@
               variant="outlined"
               size="small"
               color="primary"
-              :to="{ name: pages.Login.name }"
+              :to="{ name: pages.Login }"
               style="margin-right: 10px"
             >
               로그인
@@ -38,7 +38,7 @@
               variant="flat"
               size="small"
               color="primary"
-              :to="{ name: pages.Register.name }"
+              :to="{ name: pages.Register }"
             >
               회원가입
             </v-btn>
@@ -64,12 +64,9 @@
             </div>
 
             <!-- Profile icon -->
-            <v-avatar
-              class="profile"
-              color="primary"
-              @click="menuMVs.menu = !menuMVs.menu"
-            >
-              <v-icon icon="mdi-account"> </v-icon>
+            <v-avatar class="profile" @click="menuMVs.menu = !menuMVs.menu">
+              <v-icon icon="mdi-account-circle" size="50" color="primary">
+              </v-icon>
             </v-avatar>
 
             <!-- Menus -->
@@ -121,21 +118,20 @@
                 class="menu"
                 v-click-outside="() => (menuMVs.menu = false)"
               >
+                <v-card-title class="d-flex pa-3 align-center">
+                  <v-avatar>
+                    <v-icon icon="mdi-account-circle" size="40" color="primary">
+                    </v-icon>
+                  </v-avatar>
+                  <div class="text-left ml-2">
+                    <p class="name">{{ currentUser.name }}</p>
+                    <p class="email">{{ currentUser.email }}</p>
+                  </div>
+                </v-card-title>
+
+                <v-divider class="mx-2"></v-divider>
+
                 <v-list density="compact" variant="text">
-                  <v-list-item>
-                    <template v-slot:prepend>
-                      <v-avatar color="primary" size="small">
-                        <v-icon icon="mdi-account" size="small"></v-icon>
-                      </v-avatar>
-                    </template>
-                    <div class="text-left mr-3">
-                      <p class="name">{{ currentUser.name }}</p>
-                      <p class="email">{{ currentUser.email }}</p>
-                    </div>
-                  </v-list-item>
-
-                  <v-divider></v-divider>
-
                   <div v-for="item in items" :key="item">
                     <v-list-item
                       v-for="item in item"
@@ -208,7 +204,7 @@
                   class="mb-1"
                   default-color="white"
                   :to="{
-                    name: pages.PostList.name,
+                    name: pages.PostList,
                     params: { boardId: board.boardId },
                   }"
                   :size="16"
@@ -321,20 +317,20 @@ const items = [
     {
       title: "내 정보",
       value: 1,
-      appendIcon: "mdi-account-circle",
-      routeName: pages.UserInfo.name,
+      appendIcon: "mdi-clipboard-account",
+      routeName: pages.UserInfo,
     },
     {
       title: "작성글 목록",
       value: 3,
       appendIcon: "mdi-newspaper-variant-multiple",
-      routeName: pages.UserPosts.name,
+      routeName: pages.UserPosts,
     },
     {
       title: "관심글 목록",
       value: 4,
       appendIcon: "mdi-bookmark-multiple",
-      routeName: pages.UserBookmarks.name,
+      routeName: pages.UserBookmarks,
     },
   ],
 ];
@@ -406,11 +402,13 @@ const boardsInclude = () => {
 .name {
   font-size: 1em;
   font-weight: 800;
+  line-height: 1;
 }
 .email {
-  margin-top: -5px;
   font-size: 0.8em;
   color: grey;
+  line-height: 1;
+  margin: 0.2em 0 0 0.1em;
 }
 
 .v-list .v-divider {

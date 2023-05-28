@@ -282,7 +282,7 @@
     >
       <template v-slot:label>
         <custom-btn class="px-0" weight="normal">
-          이용약관 및 개인정보처리방침
+          서비스 이용약관 및 개인정보처리방침
           <v-dialog activator="parent" max-width="600px">
             <v-expansion-panels
               v-model="panels"
@@ -290,7 +290,7 @@
               multiple
               variant="accordion"
             >
-              <v-expansion-panel title="이용약관">
+              <v-expansion-panel title="서비스 이용약관">
                 <template v-slot:text>
                   <div class="overflow-y-auto" style="max-height: 300px">
                     {{ ipsum }}
@@ -307,28 +307,29 @@
             </v-expansion-panels>
           </v-dialog>
         </custom-btn>
-        에 동의합니다 (필수)
+        에 동의합니다
       </template>
     </v-checkbox>
 
-    <v-btn
-      type="submit"
-      block
-      :disabled="
-        formData.my_id.timer != null ||
-        formData.email.timer != null ||
-        !canSubmit
-      "
-      :loading="submitting"
-    >
-      {{
-        canSubmit
-          ? formData.my_id.timer != null || formData.email.timer != null
-            ? "정보를 확인하고 있어요"
-            : "회원가입"
-          : "항목을 모두 작성해야 해요"
-      }}
-    </v-btn>
+    <div @click="submit">
+      <v-btn
+        block
+        :disabled="
+          formData.my_id.timer != null ||
+          formData.email.timer != null ||
+          !canSubmit
+        "
+        :loading="submitting"
+      >
+        {{
+          canSubmit
+            ? formData.my_id.timer != null || formData.email.timer != null
+              ? "정보를 확인하고 있어요"
+              : "회원가입"
+            : "항목을 모두 작성해야 해요"
+        }}
+      </v-btn>
+    </div>
   </v-form>
 </template>
 
@@ -547,7 +548,12 @@ const chechEmailUniqueness = async () => {
     .finally(() => (formData.email.timer = null));
 };
 const submit = () => {
-  if (!canSubmit.value) return;
+  if (!canSubmit.value) {
+    for (const field of Object.values(formData)) {
+      field.validity.display = true;
+    }
+    return;
+  }
   submitting.value = true;
 
   apiRequest(
@@ -567,11 +573,11 @@ const submit = () => {
         null,
         { actions: modalPresets.OK }
       );
-      router.push({ name: pages.Login.name });
+      router.push({ name: pages.Login });
     })
     .catch(async () => {
       await modalStore.openModal(
-        "오류가 발생했습니다.\n잠시 뒤에 다시 시도하거나 관리자에게 문의해주세요.",
+        "오류가 발생했습니다.\n나중에 다시 시도하거나 관리자에게 문의 바랍니다.",
         null,
         { actions: modalPresets.OK }
       );

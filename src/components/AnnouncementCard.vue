@@ -8,7 +8,7 @@
       <custom-btn
         class="announce-title-btn"
         :to="{
-          name: pages.ViewPost.name,
+          name: pages.ViewPost,
           params: { boardId: 'announcements', postId: currentAnnounce?.postId },
         }"
       >
@@ -32,7 +32,7 @@
 <script setup>
 import CustomBtn from "./CustomBtn.vue";
 
-import { ref, computed, reactive, onMounted, onBeforeUnmount } from "vue";
+import { ref, computed, reactive, onBeforeMount, onBeforeUnmount } from "vue";
 import { pages } from "@/router";
 import { useDevelopStore } from "@/store";
 
@@ -47,7 +47,7 @@ let timer;
 const CYCLE_INTERVAL = 5000;
 const transition = ref(true);
 
-onMounted(() => {
+onBeforeMount(() => {
   /**
    * TODO 서버에서 공지 받아오기
    */

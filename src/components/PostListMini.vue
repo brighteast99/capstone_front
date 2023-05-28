@@ -8,7 +8,7 @@
       <v-spacer></v-spacer>
       <custom-btn
         size="small"
-        :to="{ name: pages.PostList.name, params: { boardId: props.boardId } }"
+        :to="{ name: pages.PostList, params: { boardId: props.boardId } }"
       >
         전체보기
       </custom-btn>
@@ -24,7 +24,7 @@
         default-color="black"
         :size="16"
         :to="{
-          name: pages.ViewPost.name,
+          name: pages.ViewPost,
           params: { boardId: item.boardId, postId: item.postId },
         }"
       >

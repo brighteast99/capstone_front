@@ -7,7 +7,6 @@
   >
   </main-banner>
 
-  <!-- Announcements -->
   <v-card
     class="rounded-0"
     elevation="0"
@@ -16,6 +15,7 @@
     <v-container fluid>
       <v-row>
         <v-col cols="12">
+          <!-- Announcements -->
           <announcement-card></announcement-card>
         </v-col>
       </v-row>
@@ -49,7 +49,7 @@ import MainBanner from "@/components/MainBanner.vue";
 import AnnouncementCard from "@/components/AnnouncementCard.vue";
 import PostListMini from "@/components/PostListMini.vue";
 
-import { reactive, onMounted } from "vue";
+import { reactive, onBeforeMount } from "vue";
 import { useDevelopStore } from "@/store";
 
 // Style
@@ -64,12 +64,12 @@ const newPosts = reactive([]);
 const trendingPosts = reactive([]);
 
 // Hook
-onMounted(() => {
+onBeforeMount(() => {
   // 나중에는 서버에서 이미지 받아오기?
   bannerImages.push(
-    require("@/assets/Banner_1.png"),
-    "https://picsum.photos/1920/360.webp?random=1",
-    "https://picsum.photos/1920/360.webp?random=2"
+    require("@/assets/Banner_Main.png"),
+    require("@/assets/Banner_1.png")
+    // "https://picsum.photos/1920/360.webp?random=1",
   );
 
   newPosts.push(...developStore.newPosts);

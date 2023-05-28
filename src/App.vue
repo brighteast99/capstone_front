@@ -1,13 +1,13 @@
 <template>
   <v-app>
     <!-- Header -->
-    <page-header v-show="interfaceStore.displayUI"></page-header>
+    <top-navbar v-show="displayTopNavbar"></top-navbar>
     <!-- Modal -->
     <custom-dialog></custom-dialog>
     <!-- Main -->
     <v-main
       :style="{
-        marginTop: (interfaceStore.displayUI ? '72' : '0') + 'px',
+        marginTop: (displayTopNavbar ? '72' : '0') + 'px',
         position: 'relative',
       }"
     >
@@ -18,11 +18,15 @@
   </v-app>
 </template>
 <script setup>
-import PageHeader from "@/components/PageHeader.vue";
-import { useInterfaceStore } from "@/store";
+import TopNavbar from "./components/TopNavbar.vue";
 import CustomDialog from "./components/CustomDialog.vue";
 
-const interfaceStore = useInterfaceStore();
+import { computed } from "vue";
+import router from "@/router";
+
+const displayTopNavbar = computed(
+  () => router.currentRoute.value.meta.useTopNavbar
+);
 </script>
 
 <style scoped>

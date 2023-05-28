@@ -53,7 +53,7 @@
             <custom-btn
               class="pl-0 pr-1"
               weight="bold"
-              :to="{ name: pages.FindUID.name }"
+              :to="{ name: pages.FindUID }"
             >
               아이디
             </custom-btn>
@@ -65,7 +65,7 @@
             <custom-btn
               class="pl-1 pr-0"
               weight="bold"
-              :to="{ name: pages.FindPW.name }"
+              :to="{ name: pages.FindPW }"
             >
               비밀번호
             </custom-btn>
@@ -80,7 +80,7 @@
             <custom-btn
               class="pr-0"
               weight="bold"
-              :to="{ name: pages.Register.name }"
+              :to="{ name: pages.Register }"
             >
               아직 계정이 없어요
             </custom-btn>
@@ -162,12 +162,12 @@ const login = async () => {
   systemStore
     .login({ my_id: formData.my_id, password: formData.pw })
     .then(async (result) => {
-      if (result) router.push({ name: pages.Main.name });
+      if (result) router.push({ name: pages.Main });
       else await loginFailed();
     })
     .catch(async () => {
       await modalStore.openModal(
-        "오류가 발생했습니다.\n 나중에 다시 시도하거나 관리자에게 문의해주세요.",
+        "오류가 발생했습니다.\n 나중에 다시 시도하거나 관리자에게 문의 바랍니다.",
         null,
         { actions: modalPresets.OK }
       );

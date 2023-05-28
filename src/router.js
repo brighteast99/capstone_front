@@ -2,70 +2,23 @@ import { createWebHistory, createRouter } from "vue-router";
 import { useSystemStore, useModalStore, useDevelopStore } from "./store";
 
 const pages = {
-  Main: {
-    name: "Main",
-    needLogin: false,
-  },
-  Board: {
-    name: "Board",
-    needLogin: false,
-  },
-  PostList: {
-    name: "PostList",
-    needLogin: false,
-  },
-  Post: {
-    name: "Post",
-    needLogin: false,
-  },
-  NewPost: {
-    name: "NewPost",
-    needLogin: true,
-  },
-  ViewPost: {
-    name: "ViewPost",
-    needLogin: false,
-  },
-  EditPost: {
-    name: "EditPost",
-    needLogin: true,
-  },
-  Search: {
-    name: "Search",
-    needLogin: false,
-  },
-  UserInfo: {
-    name: "UserInfo",
-    needLogin: false,
-  },
-  UserPosts: {
-    name: "UserPosts",
-    needLogin: false,
-  },
-  UserBookmarks: {
-    name: "UserBookmarks",
-    needLogin: false,
-  },
-  Login: {
-    name: "Login",
-    needLogin: false,
-  },
-  Register: {
-    name: "Register",
-    needLogin: false,
-  },
-  FindUID: {
-    name: "FindUID",
-    needLogin: false,
-  },
-  FindPW: {
-    name: "FindPW",
-    needLogin: false,
-  },
-  NotFound: {
-    name: "NotFound",
-    needLogin: false,
-  },
+  Main: "Main",
+  Board: "Board",
+  PostList: "PostList",
+  Post: "Post",
+  NewPost: "NewPost",
+  ViewPost: "ViewPost",
+  EditPost: "EditPost",
+  Search: "Search",
+  UserInfo: "UserInfo",
+  UserPosts: "UserPosts",
+  UserBookmarks: "UserBookmarks",
+  Login: "Login",
+  Register: "Register",
+  FindUID: "FindUID",
+  FindPW: "FindPW",
+  NotFound: "NotFound",
+  ServerError: "ServerError",
 };
 Object.freeze(pages);
 
@@ -75,63 +28,69 @@ const routes = [
   // Main Page
   {
     path: "/",
-    name: pages.Main.name,
+    name: pages.Main,
     component: () => import("@/pages/MainPage"),
+    meta: { requireLogin: false, useTopNavbar: true },
   },
   // Board page
   {
     path: "/boards/:boardId",
-    name: pages.Board.name,
+    name: pages.Board,
     children: [
       {
         path: "posts",
         children: [
           {
             path: "",
-            name: pages.PostList.name,
+            name: pages.PostList,
             props: true,
             component: () => import("@/pages/PostListPage"),
+            meta: { requireLogin: false, useTopNavbar: true },
           },
           {
             path: "new",
-            name: pages.NewPost.name,
+            name: pages.NewPost,
             component: () => import("@/pages/PostPage"),
             props: true,
+            meta: { requireLogin: true, useTopNavbar: true },
           },
           {
             path: ":postId",
-            name: pages.Post.name,
+            name: pages.Post,
             children: [
               {
                 path: "",
-                name: pages.ViewPost.name,
+                name: pages.ViewPost,
                 component: () => import("@/pages/PostPage"),
                 props: true,
+                meta: { requireLogin: false, useTopNavbar: true },
               },
               {
                 path: "edit",
-                name: pages.EditPost.name,
+                name: pages.EditPost,
                 beforeEnter: async (to, from, next) => {
                   const systemStore = useSystemStore();
                   const modalStore = useModalStore();
                   const developStore = useDevelopStore();
 
+                  // Check if current user is the writer of the post
                   if (
                     systemStore.currentUser.id !=
                     developStore.postData.writer.id
                   ) {
-                    if (!from.name) return next({ name: pages.Main.name });
+                    if (!from) return next({ name: pages.Main });
 
                     await modalStore.openModal("권한이 없습니다!", null, {
                       actions: [{ label: "OK" }],
                     });
-                    return next({ name: pages.Main.name });
+                    return next({ name: pages.Main });
                   }
 
                   next();
                 },
                 component: () => import("@/pages/PostPage"),
                 props: true,
+                meta: { requireLogin: true, useTopNavbar: true },
               },
             ],
           },
@@ -142,39 +101,45 @@ const routes = [
   // Search Page
   {
     path: "/search",
-    name: pages.Search.name,
+    name: pages.Search,
     component: () => import("@/pages/SearchPage"),
+    meta: { requireLogin: false, useTopNavbar: true },
   },
   // User info page
   {
-    path: "/users/:userId",
-    name: pages.UserInfo.name,
+    path: "/users/:userId(\\d+)",
+    name: pages.UserInfo,
     component: () => import("@/pages/UserInfoPage"),
     props: true,
     children: [
       {
         path: "posts",
-        name: pages.UserPosts.name,
+        name: pages.UserPosts,
         props: true,
         component: () => import("@/pages/UserInfoPage"),
+        meta: { requireLogin: false, useTopNavbar: true },
       },
       {
         path: "bookmarks",
-        name: pages.UserBookmarks.name,
+        name: pages.UserBookmarks,
         props: true,
         component: () => import("@/pages/UserInfoPage"),
+        meta: { requireLogin: false, useTopNavbar: true },
       },
     ],
+    meta: { requireLogin: false, useTopNavbar: true },
   },
   // Login page
   {
     path: "/login",
-    name: pages.Login.name,
+    name: pages.Login,
     beforeEnter: () => {
+      // redirect to main page if already logged in
       const systemStore = useSystemStore();
-      if (systemStore.loggedIn) return { name: pages.Main.name };
+      if (systemStore.loggedIn) return { name: pages.Main };
     },
     component: () => import("@/pages/LoginPage"),
+    meta: { requireLogin: false, useTopNavbar: false },
   },
   // Register & find ID/PW page
   {
@@ -183,18 +148,21 @@ const routes = [
     children: [
       {
         path: "register",
-        name: pages.Register.name,
+        name: pages.Register,
         component: () => import("@/components/forms/RegisterForm"),
+        meta: { requireLogin: false, useTopNavbar: false },
       },
       {
         path: "find/id",
-        name: pages.FindUID.name,
+        name: pages.FindUID,
         component: () => import("@/components/forms/FindIdForm"),
+        meta: { requireLogin: false, useTopNavbar: false },
       },
       {
         path: "find/pw",
-        name: pages.FindPW.name,
+        name: pages.FindPW,
         component: () => import("@/components/forms/FindPwForm"),
+        meta: { requireLogin: false, useTopNavbar: false },
       },
     ],
   },
@@ -202,8 +170,16 @@ const routes = [
   // 404:Not Found
   {
     path: "/:pathMatch(.*)*",
-    name: pages.NotFound.name,
+    name: pages.NotFound,
     component: () => import("@/pages/NotFoundPage"),
+    meta: { requireLogin: false, useTopNavbar: true },
+  },
+  // 500: Server Error
+  {
+    path: "/:pathMatch(.*)*",
+    name: pages.ServerError,
+    component: () => import("@/pages/ErrorPage"),
+    meta: { requireLogin: false, useTopNavbar: true },
   },
 ];
 
@@ -213,29 +189,32 @@ const router = createRouter({
 });
 
 router.beforeEach(async (to, from, next) => {
-  if (!pages[to.name].needLogin) return next();
-
   const systemStore = useSystemStore();
-  if (systemStore.loggedIn) return next();
 
-  if (!from.name) return next({ name: pages.Main.name });
+  // Continue to route if the page doesn't need login or user is already logged in
+  if (!to.meta.requireLogin || systemStore.loggedIn) return next();
 
-  const modalStore = useModalStore();
-  await modalStore
-    .openModal("로그인이 필요한 페이지입니다.", null, {
-      actions: [
-        { label: "로그인", response: "Login" },
-        { label: "취소", response: "Cancel", color: "black" },
-      ],
-    })
-    .then((response) => {
-      console.log(response);
-      if (response === "Login") return next({ name: pages.Login.name });
-      else {
-        console.log(from);
-        return next(false);
-      }
-    });
+  // Routing from the outside of the service
+  if (!from) return next({ name: pages.Main });
+  // Internel routing
+  else {
+    const modalStore = useModalStore();
+    await modalStore
+      .openModal("로그인이 필요한 페이지입니다.", null, {
+        actions: [
+          { label: "로그인", response: "Login" },
+          { label: "취소", response: "Cancel", color: "black" },
+        ],
+      })
+      .then((response) => {
+        console.log(response);
+        if (response === "Login") return next({ name: pages.Login });
+        else {
+          console.log(from);
+          return next(false);
+        }
+      });
+  }
 });
 
 export default router;

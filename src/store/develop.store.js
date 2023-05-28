@@ -77,28 +77,58 @@ export const useDevelopStore = defineStore(
 
     const posts = reactive([
       {
+        writer: {
+          id: 1,
+          name: "홍길동",
+        },
         title: "테스트 게시물 1",
         postId: "0",
+        date: new Date(),
       },
       {
+        writer: {
+          id: 1,
+          name: "홍길동",
+        },
         title: "테스트 게시물 2",
         postId: "1",
+        date: new Date(),
       },
       {
+        writer: {
+          id: 1,
+          name: "홍길동",
+        },
         title: "테스트 게시물 3",
         postId: "2",
+        date: new Date(),
       },
       {
+        writer: {
+          id: 1,
+          name: "홍길동",
+        },
         title: "테스트 게시물 4",
         postId: "3",
+        date: new Date(),
       },
       {
+        writer: {
+          id: 1,
+          name: "홍길동",
+        },
         title: "테스트 게시물 5",
         postId: "4",
+        date: new Date(),
       },
       {
+        writer: {
+          id: 1,
+          name: "홍길동",
+        },
         title: "테스트 게시물 6",
         postId: "5",
+        date: new Date(),
       },
     ]);
 

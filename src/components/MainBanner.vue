@@ -1,5 +1,6 @@
 <template>
   <v-carousel
+    v-model="current"
     :height="props.height"
     hide-delimiter-background
     :show-arrows="false"
@@ -8,10 +9,6 @@
     interval="5000"
     color="primary_accent"
   >
-    <v-carousel-item>
-      <v-img src="@/assets/Banner_Main.png" cover :height="props.height">
-      </v-img>
-    </v-carousel-item>
     <v-carousel-item v-for="image in props.images" :key="image">
       <v-img :src="image" cover :height="props.height"> </v-img>
     </v-carousel-item>
@@ -19,7 +16,9 @@
 </template>
 
 <script setup>
-import { defineProps } from "vue";
+import { ref, defineProps, onBeforeMount } from "vue";
+
+const current = ref(null);
 
 const props = defineProps({
   height: {
@@ -27,6 +26,10 @@ const props = defineProps({
     default: 360,
   },
   images: Array,
+});
+
+onBeforeMount(() => {
+  current.value = 0;
 });
 </script>
 

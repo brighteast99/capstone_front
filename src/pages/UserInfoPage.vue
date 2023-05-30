@@ -82,11 +82,13 @@ const props = defineProps({
 
 // Hooks
 onBeforeMount(() => {
-  apiRequest(API.GetUser, { id: Number(props.userId) }, [
-    "name",
-    "email",
-    "date_created",
-  ])
+  new apiRequest()
+    .push(API.GetUser, { id: Number(props.userId) }, [
+      "name",
+      "email",
+      "date_created",
+    ])
+    .send()
     .then(parseResponse)
     .then((response) => {
       if (!response[API.GetUser]) router.replace({ name: pages.NotFound });

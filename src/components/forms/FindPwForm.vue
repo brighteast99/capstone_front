@@ -1,7 +1,7 @@
 <template>
   <!-- Finding form -->
   <template v-if="states.id == null">
-    <v-form style="width: 100%" @submit.prevent="findID">
+    <v-form style="width: 100%" @submit.prevent="findUser">
       <v-text-field label="아이디" v-model="states.my_id.value" autofocus>
       </v-text-field>
       <v-text-field label="이메일" v-model="states.email.value"> </v-text-field>
@@ -177,8 +177,7 @@ import {
 } from "@/modules/validator";
 import { useModalStore } from "@/store";
 import { modalPresets } from "@/store/modal.store";
-import { apiRequest, API } from "@/modules/Services/API";
-import { parseResponse } from "@/modules/Services/API";
+import { apiRequest, API, parseResponse } from "@/modules/Services/API";
 import router, { pages } from "@/router";
 
 // Pinia storage
@@ -235,7 +234,7 @@ watchEffect(() => {
 });
 
 // Methods
-const findID = async () => {
+const findUser = async () => {
   states.loading = true;
 
   if (!states.my_id.validity || !states.email.validity) {
@@ -244,14 +243,16 @@ const findID = async () => {
     return;
   }
 
-  apiRequest(
-    API.SearchUserForPW,
-    {
-      my_id: states.my_id.value,
-      email: states.email.value,
-    },
-    "id"
-  )
+  new apiRequest()
+    .push(
+      API.SearchUserForPW,
+      {
+        my_id: states.my_id.value,
+        email: states.email.value,
+      },
+      "id"
+    )
+    .send()
     .then(parseResponse)
     .then(async (response) => {
       states.id = Number(response[API.SearchUserForPW].id);
@@ -264,7 +265,12 @@ const findID = async () => {
 
 const modifyPW = () => {
   states.loading = true;
-  apiRequest(API.ModifyPassword, { id: states.id, password: states.pw.value })
+  new apiRequest()
+    .push(API.ModifyPassword, {
+      id: states.id,
+      password: states.pw.value,
+    })
+    .send()
     .then(parseResponse)
     .then(async (response) => {
       states.modified = response[API.ModifyPassword];

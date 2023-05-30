@@ -23,7 +23,11 @@ Object.freeze(API);
  *
  * @returns Axios Promise
  */
-const apiRequest = (name, args, fields) => {
+const apiRequest = function () {
+  this.querySet = [];
+};
+
+apiRequest.prototype.push = function (name, args, fields) {
   let argString = "";
   for (const key of Object.keys(args)) {
     //Wrap value with "" if type is string
@@ -38,10 +42,23 @@ const apiRequest = (name, args, fields) => {
     fieldString = fields.reduce((accum, current) => `${accum} ${current}`);
   else if (fields) fieldString = fields;
 
-  let queryString = `{${name}(${argString})${
+  let queryString = `${name}(${argString})${
     fieldString.length > 0 ? ` { ${fieldString} }` : ""
-  }}`;
-  return HTTP.post("", { query: queryString });
+  }`;
+
+  this.querySet.push(queryString);
+  return this;
+};
+apiRequest.prototype.send = function () {
+  let finalQuery = "{\n";
+
+  for (const query of this.querySet) finalQuery += query + "\n";
+
+  finalQuery += "}";
+
+  console.log(finalQuery);
+
+  return HTTP.post("", { query: finalQuery });
 };
 
 const parseResponse = (_response) => {

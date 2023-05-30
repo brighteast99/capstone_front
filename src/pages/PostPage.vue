@@ -17,7 +17,9 @@
 
   <v-card class="mx-auto mb-5 pa-3" :class="{ 'mt-10': isEditmode }">
     <template v-if="isEditmode">
-      <v-card-title class="pa-5 pb-0">
+      <v-card-title class="pa-5 pb-0 d-flex align-center">
+        <custom-dropdown class="select-board mt-n5 mb-4" :items="boards">
+        </custom-dropdown>
         <v-text-field
           class="mt-n7 mb-4"
           placeholder="글 제목"
@@ -25,6 +27,7 @@
           color="primary"
           autofocus
           hide-details
+          density="compact"
           v-model="postData.title"
         ></v-text-field>
       </v-card-title>
@@ -54,10 +57,10 @@
               weight="bold"
               :to="{
                 name: pages.UserInfo,
-                params: { userId: postData.writer?.id },
+                params: { userId: postData.writer_id },
               }"
             >
-              {{ postData.writer?.name }}
+              {{ writerData.name }}
             </custom-btn>
             <v-spacer></v-spacer>
             <span class="mr-3">{{ `작성일: ${date}` }} </span>
@@ -127,6 +130,7 @@
 </template>
 
 <script setup>
+import CustomDropdown from "@/components/CustomDropdown.vue";
 import TextEditor from "@/components/TextEditor.vue";
 import CustomBtn from "@/components/CustomBtn.vue";
 
@@ -177,14 +181,14 @@ const canLeave = computed(() => {
   return !systemStore.loggedIn || !isEditmode.value || !isEdited.value;
 });
 const isUsersPost = computed(
-  () => systemStore.currentUser.id == postData.writer?.id
+  () => systemStore.currentUser.id == postData.writer_id
 );
+const writerData = reactive({
+  name: null,
+  email: null,
+});
 const postData = reactive({
-  writer: {
-    id: null,
-    name: null,
-    email: null,
-  },
+  writer_id: null,
   title: "",
   date: null,
   modifyDate: null,
@@ -226,7 +230,7 @@ onBeforeMount(() => {
     Object.assign(postData, developStore.postData);
     postData_backup.title = postData.title;
     postData_backup.content = postData.content;
-  } else Object.assign(postData.writer, systemStore.currentUser);
+  } else postData.writer_id = systemStore.currentUser.id;
 
   if (isEditmode.value) {
     window.addEventListener("beforeunload", beforeunloadEvent);
@@ -434,6 +438,9 @@ const beforeunloadEvent = (event) => {
 </script>
 
 <style scoped>
+.select-board {
+  flex: 0 0;
+}
 .title {
   font-size: 1.5em;
 }

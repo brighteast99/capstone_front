@@ -16,7 +16,9 @@ export const useSystemStore = defineStore(
 
     const login = (loginInfo) => {
       return new Promise((resolve, reject) => {
-        apiRequest(API.SignIn, loginInfo, ["id", "name", "email"])
+        new apiRequest()
+          .push(API.SignIn, loginInfo, ["id", "name", "email"])
+          .send()
           .then(parseResponse)
           .then((response) => {
             const loginData = response[API.SignIn];
@@ -28,7 +30,10 @@ export const useSystemStore = defineStore(
               resolve(true);
             }
           })
-          .catch((err) => reject(err));
+          .catch((err) => {
+            console.log("login catch");
+            reject(err);
+          });
       });
     };
 

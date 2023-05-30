@@ -514,7 +514,9 @@ const checkIdUniqueness = () => {
     if (formData.my_id.value?.length == 0) reject();
 
     formData.my_id.timer = setTimeout(() => {
-      apiRequest(API.CheckExistingID, { my_id: formData.my_id.value })
+      new apiRequest()
+        .push(API.CheckExistingID, { my_id: formData.my_id.value })
+        .send()
         .then(parseResponse)
         .then((response) => {
           if (response[API.CheckExistingID]) resolve(false);
@@ -534,7 +536,11 @@ const chechEmailUniqueness = async () => {
     if (formData.email.value?.length == 0) reject();
 
     formData.email.timer = setTimeout(() => {
-      apiRequest(API.CheckExistingEmail, { email: formData.email.value })
+      new apiRequest()
+        .push(API.CheckExistingEmail, {
+          email: formData.email.value,
+        })
+        .send()
         .then(parseResponse)
         .then((response) => {
           if (response[API.CheckExistingEmail]) resolve(false);
@@ -556,16 +562,18 @@ const submit = () => {
   }
   submitting.value = true;
 
-  apiRequest(
-    API.SignUp,
-    {
-      name: formData.name.value,
-      my_id: formData.my_id.value,
-      password: formData.pw.value,
-      email: formData.email.value,
-    },
-    "id"
-  )
+  new apiRequest()
+    .push(
+      API.SignUp,
+      {
+        name: formData.name.value,
+        my_id: formData.my_id.value,
+        password: formData.pw.value,
+        email: formData.email.value,
+      },
+      "id"
+    )
+    .send()
     .then(async () => {
       completed.value = true;
       await modalStore.openModal(

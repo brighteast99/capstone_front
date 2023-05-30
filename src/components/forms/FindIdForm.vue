@@ -46,8 +46,7 @@
 
 <script setup>
 import { reactive, computed, defineEmits, watchEffect } from "vue";
-import { parseResponse } from "@/modules/Services/API";
-import { apiRequest, API } from "@/modules/Services/API";
+import { apiRequest, API, parseResponse } from "@/modules/Services/API";
 import { validEmail } from "@/modules/validator";
 import { useModalStore } from "@/store";
 import { modalPresets } from "@/store/modal.store";
@@ -74,7 +73,9 @@ watchEffect(() => emits("completed", states.found));
 // Methods
 const submit = () => {
   states.loading = true;
-  apiRequest(API.SearchUserForMyID, { email: states.email })
+  new apiRequest()
+    .push(API.SearchUserForMyID, { email: states.email })
+    .send()
     .then(parseResponse)
     .then(async (response) => {
       states.my_id = response[API.SearchUserForMyID];

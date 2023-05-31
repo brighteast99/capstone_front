@@ -577,7 +577,7 @@ const editor = useEditor({
 const fontSize = computed({
   get: () => {
     const size = editor.value?.getAttributes("textStyle").fontSize;
-    if (!size || size == "") return fontSizes[1];
+    if (!size) return fontSizes[1];
     return parseInt(size, 10);
   },
   set: (value) => {
@@ -588,7 +588,7 @@ const fontSize = computed({
 const fontColor = computed({
   get: () => {
     const color = editor.value?.getAttributes("textStyle").color;
-    if (color == null || color === "") return "#000000";
+    if (!color) return "#000000";
     return color;
   },
   set: (value) => {
@@ -624,7 +624,7 @@ const imageFormData = reactive({
   file: [],
   rules: [
     (v) => {
-      if (imageFormData.sourceIsURL || v === null) return true;
+      if (imageFormData.sourceIsURL || !v) return true;
       for (const file of v)
         if (file.size > 3 * 1024 * 1024)
           return "3MB 이하 이미지만 첨부 가능합니다.";
@@ -719,7 +719,7 @@ const insertImage = async () => {
   let url;
 
   if (imageFormData.sourceIsURL) {
-    if (imageFormData.url == null || imageFormData.url.trim() === "") {
+    if (!imageFormData.url?.trim()) {
       menuMVs.Image = false;
       return;
     }
@@ -738,14 +738,14 @@ const insertImage = async () => {
 };
 const insertLink = () => {
   const url = linkFormData.url;
-  if (url == null || url.trim() === "") {
+  if (!url?.trim()) {
     menuMVs.Link = false;
     return;
   }
 
   let name = linkFormData.name;
   const { from, to } = editor.value?.state.selection;
-  if (linkFormData.name == null || linkFormData.name?.length == 0) {
+  if (!linkFormData.name) {
     name =
       from == to
         ? linkFormData.url
@@ -829,6 +829,7 @@ const insertLink = () => {
   display: flex;
   flex-direction: row;
   align-items: center;
+  min-width: fit-content;
 }
 
 .wysiwyg-stacked-icon {

@@ -18,8 +18,8 @@
           <template v-slot:prepend>
             <v-icon
               class="mr-3"
-              :color="validityColor(formData.name.validity.length)"
-              :icon="validityIcon(formData.name.validity.length)"
+              :color="Validator.validityColor(formData.name.validity.length)"
+              :icon="Validator.validityIcon(formData.name.validity.length)"
             ></v-icon>
           </template>
           2~12자 길이
@@ -28,8 +28,12 @@
           <template v-slot:prepend>
             <v-icon
               class="mr-3"
-              :icon="validityIcon(formData.name.validity.KorEngNumOnly)"
-              :color="validityColor(formData.name.validity.KorEngNumOnly)"
+              :icon="
+                Validator.validityIcon(formData.name.validity.KorEngNumOnly)
+              "
+              :color="
+                Validator.validityColor(formData.name.validity.KorEngNumOnly)
+              "
             ></v-icon>
           </template>
           한글, 영문, 숫자만
@@ -40,7 +44,7 @@
     <v-text-field
       label="아이디"
       v-model="formData.my_id.value"
-      :loading="formData.my_id.timer != null"
+      :loading="formData.my_id.validity.unique === undefined"
       :error="!formData.my_id.validity.value && formData.my_id.validity.display"
       @update:model-value="checkIdUniqueness()"
       @update:focused="formData.my_id.tooltip = $event"
@@ -56,8 +60,8 @@
           <template v-slot:prepend>
             <v-icon
               class="mr-3"
-              :icon="validityIcon(formData.my_id.validity.length)"
-              :color="validityColor(formData.my_id.validity.length)"
+              :icon="Validator.validityIcon(formData.my_id.validity.length)"
+              :color="Validator.validityColor(formData.my_id.validity.length)"
             ></v-icon>
           </template>
           8~16자 길이
@@ -66,8 +70,10 @@
           <template v-slot:prepend>
             <v-icon
               class="mr-3"
-              :icon="validityIcon(formData.my_id.validity.EngNumOnly)"
-              :color="validityColor(formData.my_id.validity.EngNumOnly)"
+              :icon="Validator.validityIcon(formData.my_id.validity.EngNumOnly)"
+              :color="
+                Validator.validityColor(formData.my_id.validity.EngNumOnly)
+              "
             ></v-icon>
           </template>
           영문, 숫자만
@@ -76,25 +82,19 @@
           <template v-slot:prepend>
             <v-icon
               class="mr-3"
-              :class="{ 'mdi-spin': formData.my_id.timer != null }"
-              :icon="
-                formData.my_id.timer != null
-                  ? 'mdi-loading'
-                  : validityIcon(formData.my_id.validity.unique)
-              "
-              :color="
-                formData.my_id.timer != null
-                  ? 'white'
-                  : validityColor(formData.my_id.validity.unique)
-              "
+              :class="{
+                'mdi-spin': formData.my_id.validity.unique === undefined,
+              }"
+              :icon="Validator.validityIcon(formData.my_id.validity.unique)"
+              :color="Validator.validityColor(formData.my_id.validity.unique)"
             ></v-icon>
           </template>
           {{
-            formData.my_id.timer != null
+            formData.my_id.validity.unique === undefined
               ? "확인중"
               : formData.my_id.validity.unique
               ? "사용 가능"
-              : formData.my_id.validity.unique == null
+              : formData.my_id.validity.unique === null
               ? "중복 확인 필요"
               : "이미 사용중인 아이디"
           }}
@@ -122,8 +122,8 @@
           <template v-slot:prepend>
             <v-icon
               class="mr-3"
-              :icon="validityIcon(formData.pw.validity.length)"
-              :color="validityColor(formData.pw.validity.length)"
+              :icon="Validator.validityIcon(formData.pw.validity.length)"
+              :color="Validator.validityColor(formData.pw.validity.length)"
             ></v-icon>
           </template>
           8~20자 길이
@@ -132,8 +132,8 @@
           <template v-slot:prepend>
             <v-icon
               class="mr-3"
-              :icon="validityIcon(formData.pw.validity.noOther)"
-              :color="validityColor(formData.pw.validity.noOther)"
+              :icon="Validator.validityIcon(formData.pw.validity.noOther)"
+              :color="Validator.validityColor(formData.pw.validity.noOther)"
             ></v-icon>
           </template>
           영문, 숫자, 특수문자만
@@ -142,8 +142,8 @@
           <template v-slot:prepend>
             <v-icon
               class="mr-3"
-              :icon="validityIcon(formData.pw.validity.containEng)"
-              :color="validityColor(formData.pw.validity.containEng)"
+              :icon="Validator.validityIcon(formData.pw.validity.containEng)"
+              :color="Validator.validityColor(formData.pw.validity.containEng)"
             ></v-icon>
           </template>
           영문 포함(대문자 또는 소문자)
@@ -152,8 +152,8 @@
           <template v-slot:prepend>
             <v-icon
               class="mr-3"
-              :icon="validityIcon(formData.pw.validity.containNum)"
-              :color="validityColor(formData.pw.validity.containNum)"
+              :icon="Validator.validityIcon(formData.pw.validity.containNum)"
+              :color="Validator.validityColor(formData.pw.validity.containNum)"
             ></v-icon>
           </template>
           숫자 포함
@@ -162,8 +162,8 @@
           <template v-slot:prepend>
             <v-icon
               class="mr-3"
-              :icon="validityIcon(formData.pw.validity.containSC)"
-              :color="validityColor(formData.pw.validity.containSC)"
+              :icon="Validator.validityIcon(formData.pw.validity.containSC)"
+              :color="Validator.validityColor(formData.pw.validity.containSC)"
             ></v-icon>
           </template>
           ! @ # $ % & * 중 하나 이상 포함
@@ -198,8 +198,10 @@
           <template v-slot:prepend>
             <v-icon
               class="mr-3"
-              :icon="validityIcon(formData.pwConfirm.validity.value)"
-              :color="validityColor(formData.pwConfirm.validity.value)"
+              :icon="Validator.validityIcon(formData.pwConfirm.validity.value)"
+              :color="
+                Validator.validityColor(formData.pwConfirm.validity.value)
+              "
             ></v-icon>
           </template>
           비밀번호 일치
@@ -219,7 +221,7 @@
           v-bind="props"
           v-model="formData.email.value"
           :items="formData.email.suggestions"
-          :loading="formData.email.timer != null"
+          :loading="formData.email.validity.unique === undefined"
           :error="
             !formData.email.validity.value && formData.email.validity.display
           "
@@ -236,8 +238,8 @@
         <template v-slot:prepend>
           <v-icon
             class="mr-3"
-            :icon="validityIcon(formData.email.validity.format)"
-            :color="validityColor(formData.email.validity.format)"
+            :icon="Validator.validityIcon(formData.email.validity.format)"
+            :color="Validator.validityColor(formData.email.validity.format)"
           ></v-icon>
         </template>
         이메일 형식 (example@example.com)
@@ -246,25 +248,19 @@
         <template v-slot:prepend>
           <v-icon
             class="mr-3"
-            :class="{ 'mdi-spin': formData.email.timer != null }"
-            :icon="
-              formData.email.timer != null
-                ? 'mdi-loading'
-                : validityIcon(formData.email.validity.unique)
-            "
-            :color="
-              formData.email.timer != null
-                ? 'white'
-                : validityColor(formData.email.validity.unique)
-            "
+            :class="{
+              'mdi-spin': formData.email.validity.unique === undefined,
+            }"
+            :icon="Validator.validityIcon(formData.email.validity.unique)"
+            :color="Validator.validityColor(formData.email.validity.unique)"
           ></v-icon>
         </template>
         {{
-          formData.email.timer != null
+          formData.email.validity.unique === undefined
             ? "확인중"
             : formData.email.validity.unique
             ? "사용 가능"
-            : formData.email.validity.unique == null
+            : formData.email.validity.unique === null
             ? "가입하지 않은 이메일"
             : "이미 가입한 이메일"
         }}
@@ -315,15 +311,16 @@
       <v-btn
         block
         :disabled="
-          formData.my_id.timer != null ||
-          formData.email.timer != null ||
+          formData.my_id.validity.unique === undefined ||
+          formData.email.validity.unique === undefined ||
           !canSubmit
         "
         :loading="submitting"
       >
         {{
           canSubmit
-            ? formData.my_id.timer != null || formData.email.timer != null
+            ? formData.my_id.validity.unique === undefined ||
+              formData.email.validity.unique === undefined
               ? "정보를 확인하고 있어요"
               : "회원가입"
             : "항목을 모두 작성해야 해요"
@@ -338,21 +335,7 @@ import CustomBtn from "@/components/CustomBtn.vue";
 
 import { ref, reactive, computed } from "vue";
 import { onBeforeRouteLeave } from "vue-router";
-import {
-  lengthBetween,
-  KorEngNumOnly,
-  validName,
-  EngNumOnly,
-  validMyID,
-  containEng,
-  containNum,
-  containSC,
-  EngNumSCOnly,
-  validPW,
-  validEmail,
-  validityIcon,
-  validityColor,
-} from "@/modules/validator";
+import * as Validator from "@/modules/validator";
 import { API, apiRequest, parseResponse } from "@/modules/Services/API";
 import { useModalStore } from "@/store";
 import {
@@ -361,6 +344,7 @@ import {
   modalPresets,
 } from "@/store/modal.store";
 import router, { pages } from "@/router";
+import { useArrayEvery, useDebounceFn } from "@vueuse/core";
 
 // Component
 const form = ref(null);
@@ -375,22 +359,29 @@ const formData = reactive({
     tooltip: false,
     validity: {
       display: false,
-      length: computed(() => lengthBetween(formData.name.value, 2, 12)),
-      KorEngNumOnly: computed(() => KorEngNumOnly(formData.name.value)),
-      value: computed(() => validName(formData.name.value)),
+      length: computed(() =>
+        Validator.lengthBetween(formData.name.value, 2, 12)
+      ),
+      KorEngNumOnly: computed(() =>
+        Validator.KorEngNumOnly(formData.name.value)
+      ),
+      value: computed(() => Validator.validName(formData.name.value)),
     },
   },
   my_id: {
     value: "",
     tooltip: false,
-    timer: null,
     validity: {
       display: false,
-      length: computed(() => lengthBetween(formData.my_id.value, 8, 16)),
-      EngNumOnly: computed(() => EngNumOnly(formData.my_id.value)),
+      length: computed(() =>
+        Validator.lengthBetween(formData.my_id.value, 8, 16)
+      ),
+      EngNumOnly: computed(() => Validator.EngNumOnly(formData.my_id.value)),
       unique: null,
       value: computed(
-        () => validMyID(formData.my_id.value) && formData.my_id.validity.unique
+        () =>
+          Validator.validMyID(formData.my_id.value) &&
+          formData.my_id.validity.unique
       ),
     },
   },
@@ -400,12 +391,12 @@ const formData = reactive({
     visibility: false,
     validity: {
       display: false,
-      length: computed(() => lengthBetween(formData.pw.value, 8, 20)),
-      containEng: computed(() => containEng(formData.pw.value)),
-      containNum: computed(() => containNum(formData.pw.value)),
-      containSC: computed(() => containSC(formData.pw.value)),
-      noOther: computed(() => EngNumSCOnly(formData.pw.value)),
-      value: computed(() => validPW(formData.pw.value)),
+      length: computed(() => Validator.lengthBetween(formData.pw.value, 8, 20)),
+      containEng: computed(() => Validator.containEng(formData.pw.value)),
+      containNum: computed(() => Validator.containNum(formData.pw.value)),
+      containSC: computed(() => Validator.containSC(formData.pw.value)),
+      noOther: computed(() => Validator.EngNumSCOnly(formData.pw.value)),
+      value: computed(() => Validator.validPW(formData.pw.value)),
     },
   },
   pwConfirm: {
@@ -422,7 +413,7 @@ const formData = reactive({
     suggestions: computed(() => {
       const value = formData.email.value;
 
-      if (value == null || value.trim().length == 0) return [];
+      if (!value?.trim()) return [];
 
       const local = value.includes("@") ? value.match(/^[^@]+/) : value;
       const domains = [
@@ -437,13 +428,14 @@ const formData = reactive({
       return domains.map((domain) => local + domain);
     }),
     tooltip: false,
-    timer: null,
     validity: {
       display: false,
-      format: computed(() => validEmail(formData.email.value)),
+      format: computed(() => Validator.validEmail(formData.email.value)),
       unique: null,
       value: computed(
-        () => validEmail(formData.email.value) && formData.email.validity.unique
+        () =>
+          Validator.validEmail(formData.email.value) &&
+          formData.email.validity.unique
       ),
     },
   },
@@ -455,11 +447,9 @@ const formData = reactive({
     },
   },
 });
-const canSubmit = computed(() =>
-  Object.values(formData).reduce(
-    (accum, field) => accum && field.validity.value,
-    true
-  )
+const canSubmit = useArrayEvery(
+  Object.values(formData),
+  (field) => field.validity.value != false
 );
 const submitting = ref(false);
 const completed = ref(false);
@@ -507,52 +497,42 @@ onBeforeRouteLeave(async (to, from, next) => {
 });
 
 // Methods
-const checkIdUniqueness = () => {
+const checkIdUniqueness = useDebounceFn(() => {
+  formData.my_id.validity.unique = undefined;
   new Promise((resolve, reject) => {
-    clearTimeout(formData.my_id.timer);
+    if (!formData.my_id.value?.trim()) reject();
 
-    if (formData.my_id.value?.length == 0) reject();
-
-    formData.my_id.timer = setTimeout(() => {
-      new apiRequest()
-        .push(API.CheckExistingID, { my_id: formData.my_id.value })
-        .send()
-        .then(parseResponse)
-        .then((response) => {
-          if (response[API.CheckExistingID]) resolve(false);
-          else resolve(true);
-        })
-        .catch(() => reject());
-    }, 250);
+    new apiRequest()
+      .execute(API.CheckExistingID, { my_id: formData.my_id.value })
+      .then(parseResponse)
+      .then((response) => {
+        if (response[API.CheckExistingID]) resolve(false);
+        else resolve(true);
+      })
+      .catch(() => reject());
   })
     .then((uniqueness) => (formData.my_id.validity.unique = uniqueness))
-    .catch(() => (formData.my_id.validity.unique = null))
-    .finally(() => (formData.my_id.timer = null));
-};
-const chechEmailUniqueness = async () => {
+    .catch(() => (formData.my_id.validity.unique = null));
+}, 250);
+const chechEmailUniqueness = useDebounceFn(() => {
+  formData.email.validity.unique = undefined;
   new Promise((resolve, reject) => {
-    clearTimeout(formData.email.timer);
+    if (!formData.email.value?.trim()) reject();
 
-    if (formData.email.value?.length == 0) reject();
-
-    formData.email.timer = setTimeout(() => {
-      new apiRequest()
-        .push(API.CheckExistingEmail, {
-          email: formData.email.value,
-        })
-        .send()
-        .then(parseResponse)
-        .then((response) => {
-          if (response[API.CheckExistingEmail]) resolve(false);
-          else resolve(true);
-        })
-        .catch(() => reject());
-    }, 250);
+    new apiRequest()
+      .execute(API.CheckExistingEmail, {
+        email: formData.email.value,
+      })
+      .then(parseResponse)
+      .then((response) => {
+        if (response[API.CheckExistingEmail]) resolve(false);
+        else resolve(true);
+      })
+      .catch(() => reject());
   })
     .then((uniqueness) => (formData.email.validity.unique = uniqueness))
-    .catch(() => (formData.email.validity.unique = null))
-    .finally(() => (formData.email.timer = null));
-};
+    .catch(() => (formData.email.validity.unique = null));
+}, 250);
 const submit = () => {
   if (!canSubmit.value) {
     for (const field of Object.values(formData)) {
@@ -563,7 +543,7 @@ const submit = () => {
   submitting.value = true;
 
   new apiRequest()
-    .push(
+    .execute(
       API.SignUp,
       {
         name: formData.name.value,
@@ -573,7 +553,6 @@ const submit = () => {
       },
       "id"
     )
-    .send()
     .then(async () => {
       completed.value = true;
       await modalStore.openModal(
@@ -583,13 +562,7 @@ const submit = () => {
       );
       router.push({ name: pages.Login });
     })
-    .catch(async () => {
-      await modalStore.openModal(
-        "오류가 발생했습니다.\n나중에 다시 시도하거나 관리자에게 문의 바랍니다.",
-        null,
-        { actions: modalPresets.OK }
-      );
-    })
+    .catch(async () => await modalStore.showErrorMessage())
     .finally(() => (submitting.value = false));
 };
 </script>

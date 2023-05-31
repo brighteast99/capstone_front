@@ -1,6 +1,6 @@
 <template>
   <!-- Finding form -->
-  <template v-if="states.id == null">
+  <template v-if="!states.id">
     <v-form style="width: 100%" @submit.prevent="findUser">
       <v-text-field label="아이디" v-model="states.my_id.value" autofocus>
       </v-text-field>
@@ -244,7 +244,7 @@ const findUser = async () => {
   }
 
   new apiRequest()
-    .push(
+    .execute(
       API.SearchUserForPW,
       {
         my_id: states.my_id.value,
@@ -252,7 +252,6 @@ const findUser = async () => {
       },
       "id"
     )
-    .send()
     .then(parseResponse)
     .then(async (response) => {
       states.id = Number(response[API.SearchUserForPW].id);
@@ -266,11 +265,10 @@ const findUser = async () => {
 const modifyPW = () => {
   states.loading = true;
   new apiRequest()
-    .push(API.ModifyPassword, {
+    .execute(API.ModifyPassword, {
       id: states.id,
       password: states.pw.value,
     })
-    .send()
     .then(parseResponse)
     .then(async (response) => {
       states.modified = response[API.ModifyPassword];
@@ -287,13 +285,7 @@ const noMatch = async () => {
   });
 };
 
-const errorOccured = async () => {
-  await modalStore.openModal(
-    "오류가 발생했습니다.\n나중에 다시 시도하거나 관리자에게 문의 바랍니다.",
-    null,
-    { actions: modalPresets.OK }
-  );
-};
+const errorOccured = async () => await modalStore.showErrorMessage();
 </script>
 
 <style scoped>

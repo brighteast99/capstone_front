@@ -10,28 +10,30 @@ export const useSystemStore = defineStore(
       id: null,
       name: null,
       email: null,
+      my_id: "",
+      password: "",
     });
 
     const loggedIn = computed(() => currentUser.id != null);
 
-    const login = (loginInfo) => {
+    const login = (loginData) => {
       return new Promise((resolve, reject) => {
         new apiRequest()
-          .push(API.SignIn, loginInfo, ["id", "name", "email"])
-          .send()
+          .execute(API.SignIn, loginData, ["id", "name", "email"])
           .then(parseResponse)
           .then((response) => {
-            const loginData = response[API.SignIn];
+            const userData = response[API.SignIn];
 
-            if (loginData == null) resolve(false);
+            if (!userData) resolve(false);
             else {
-              Object.assign(currentUser, loginData);
+              Object.assign(currentUser, userData);
+              currentUser.my_id = loginData.my_id;
+              currentUser.password = loginData.password;
               currentUser.id = Number(currentUser.id);
               resolve(true);
             }
           })
           .catch((err) => {
-            console.log("login catch");
             reject(err);
           });
       });
@@ -41,12 +43,31 @@ export const useSystemStore = defineStore(
       currentUser.id = null;
       currentUser.name = null;
       currentUser.email = null;
+      currentUser.my_id = "";
+      currentUser.password = "";
 
       if (router.currentRoute.value.meta.requireLogin)
         router.replace({ name: pages.Main });
     };
 
-    return { currentUser, loggedIn, login, logOut };
+    const verify = () => {
+      if (currentUser.id != null)
+        new apiRequest()
+          .execute(
+            API.SignIn,
+            { my_id: currentUser.my_id, password: currentUser.password },
+            "id"
+          )
+          .then(parseResponse)
+          .then((response) => {
+            const userData = response[API.SignIn];
+            if (!userData) logOut();
+            if (userData.id != currentUser.id) logOut();
+          })
+          .catch(() => logOut());
+    };
+
+    return { currentUser, loggedIn, login, logOut, verify };
   },
   { persist: true }
 );

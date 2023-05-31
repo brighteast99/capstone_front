@@ -1,5 +1,6 @@
 import { createWebHistory, createRouter } from "vue-router";
-import { useSystemStore, useModalStore, useDevelopStore } from "./store";
+import { useSystemStore, useModalStore } from "./store";
+import { API, constructQuery, useAPI } from "./modules/Services/useAPI";
 
 const pages = {
   Main: "Main",
@@ -50,9 +51,9 @@ const routes = [
           {
             path: "new",
             name: pages.NewPost,
-            component: () => import("@/pages/PostPage"),
+            component: () => import("@/pages/EditPostPage"),
             props: true,
-            meta: { requireLogin: true, useTopNavbar: true },
+            meta: { requireLogin: true, useTopNavbar: true, newPost: true },
           },
           {
             path: ":postId",
@@ -61,7 +62,7 @@ const routes = [
               {
                 path: "",
                 name: pages.ViewPost,
-                component: () => import("@/pages/PostPage"),
+                component: () => import("@/pages/ViewPostPage"),
                 props: true,
                 meta: { requireLogin: false, useTopNavbar: true },
               },
@@ -71,26 +72,40 @@ const routes = [
                 beforeEnter: async (to, from, next) => {
                   const systemStore = useSystemStore();
                   const modalStore = useModalStore();
-                  const developStore = useDevelopStore();
 
                   // Check if current user is the writer of the post
-                  if (
-                    systemStore.currentUser.id !=
-                    developStore.postData.writer.id
-                  ) {
-                    if (!from) return next({ name: pages.Main });
+                  const { data: res, execute } = useAPI({
+                    onError: async () => modalStore.showErrorMessage(),
+                  });
+                  await execute(
+                    constructQuery({
+                      name: API.GetPost,
+                      args: {
+                        id: Number(to.params.postId),
+                      },
+                      fields: { user: "id" },
+                    })
+                  );
 
-                    await modalStore.openModal("권한이 없습니다!", null, {
-                      actions: [{ label: "OK" }],
-                    });
-                    return next({ name: pages.Main });
+                  if (
+                    res.value.data[API.GetPost].user.id !=
+                    systemStore.currentUser.id
+                  ) {
+                    if (!from.name) return next({ name: pages.Main });
+
+                    await modalStore.showNoPermissionMessage();
+                    return next(false);
                   }
 
-                  next();
+                  return next(true);
                 },
-                component: () => import("@/pages/PostPage"),
+                component: () => import("@/pages/EditPostPage"),
                 props: true,
-                meta: { requireLogin: true, useTopNavbar: true },
+                meta: {
+                  requireLogin: true,
+                  useTopNavbar: true,
+                  newPost: false,
+                },
               },
             ],
           },
@@ -133,10 +148,12 @@ const routes = [
   {
     path: "/login",
     name: pages.Login,
-    beforeEnter: () => {
+    beforeEnter: (to, from, next) => {
       // redirect to main page if already logged in
       const systemStore = useSystemStore();
-      if (systemStore.loggedIn) return { name: pages.Main };
+      if (systemStore.loggedIn)
+        return next({ name: pages.Main, redirect: true });
+      return next();
     },
     component: () => import("@/pages/LoginPage"),
     meta: { requireLogin: false, useTopNavbar: false },
@@ -165,6 +182,12 @@ const routes = [
         meta: { requireLogin: false, useTopNavbar: false },
       },
     ],
+  },
+  {
+    path: "/api_test",
+    name: "api_test",
+    component: () => import("@/modules/Services/TestPage"),
+    meta: { requireLogin: false, useTopNavbar: false },
   },
 
   // 404:Not Found
@@ -195,10 +218,13 @@ router.beforeEach(async (to, from, next) => {
   if (!to.meta.requireLogin || systemStore.loggedIn) return next();
 
   // Routing from the outside of the service
-  if (!from) return next({ name: pages.Main });
+  if (!from.name) {
+    return next({ name: pages.Main });
+  }
   // Internel routing
   else {
     const modalStore = useModalStore();
+    let goto = true;
     await modalStore
       .openModal("로그인이 필요한 페이지입니다.", null, {
         actions: [
@@ -207,13 +233,12 @@ router.beforeEach(async (to, from, next) => {
         ],
       })
       .then((response) => {
-        console.log(response);
-        if (response === "Login") return next({ name: pages.Login });
+        if (response === "Login") return (goto = { name: pages.Login });
         else {
-          console.log(from);
-          return next(false);
+          return (goto = false);
         }
       });
+    return next(goto);
   }
 });
 

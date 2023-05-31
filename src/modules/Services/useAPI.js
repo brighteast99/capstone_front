@@ -1,4 +1,5 @@
-import HTTP from "./HTTP";
+import axios from "axios";
+import { useAxios } from "@vueuse/integrations/useAxios";
 
 const API = {
   Test: "test",
@@ -60,7 +61,6 @@ const constructQueryString = function (name, args, fields) {
           // flatten the value if the it is an array
           if (Array.isArray(element[key])) {
             fields[idx] = `${key} { ${element[key].join(" ")} }`;
-            console.log(fields[idx]);
           } else {
             let flatten = [];
             Object.keys(element).forEach((key) => {
@@ -89,41 +89,35 @@ const constructQueryString = function (name, args, fields) {
   return queryString;
 };
 
-/**
- *
- * @param {string} name - API 이름
- * @param {Object} args - API와 전달할 인자
- * @param {string | string[]} fields - 반환받을 필드
- *
- * @returns Axios Promise
- */
-const apiRequest = function () {
-  this.querySet = [];
-};
+function constructQuery(queryData) {
+  let querySet = [];
 
-apiRequest.prototype.execute = function (name, args, fields) {
-  this.querySet.push(constructQueryString(name, args, fields));
-  return this.send();
-};
+  if (!Array.isArray(queryData)) queryData = [queryData];
 
-apiRequest.prototype.push = function (name, args, fields) {
-  this.querySet.push(constructQueryString(name, args, fields));
-  return this;
-};
-
-apiRequest.prototype.send = function () {
-  let finalQuery = "{";
-  for (const query of this.querySet) finalQuery += query + " ";
-  finalQuery += "}";
-
-  return HTTP.post("", { query: finalQuery });
-};
-
-const parseResponse = (_response) => {
-  return new Promise((resolve) => {
-    const response = _response.data;
-    resolve(response["data"]);
+  queryData.forEach((query) => {
+    const { name, args, fields } = query;
+    const queryString = constructQueryString(name, args, fields);
+    querySet.push(queryString);
   });
-};
+  return { data: { query: "{" + querySet.join(" ") + "}" } };
+}
 
-export { API, apiRequest, parseResponse };
+function useAPI(callbacks) {
+  return useAxios(
+    "",
+    { method: "POST" },
+    axios.create({
+      baseURL: "/api",
+      withCredentials: true,
+      xsrfCookieName: "csrftoken",
+      xsrfHeaderName: "X-CSRFToken",
+    }),
+    {
+      onSuccess: callbacks.onSuccess,
+      onError: callbacks.onError,
+      onFinish: callbacks.onFinish,
+    }
+  );
+}
+
+export { API, useAPI, constructQuery };

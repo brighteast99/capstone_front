@@ -11,7 +11,7 @@
         <v-form ref="loginForm" style="width: 100%" @submit.prevent="login">
           <v-row>
             <v-text-field
-              v-model="formData.my_id"
+              v-model="loginData.my_id"
               label="아이디"
               :error="false"
               autofocus
@@ -19,7 +19,7 @@
           </v-row>
           <v-row>
             <v-text-field
-              v-model="formData.pw"
+              v-model="loginData.password"
               label="비밀번호"
               type="password"
               :error="false"
@@ -37,14 +37,16 @@
               로그인
             </v-btn>
           </v-row>
-          <v-row>
-            <!-- <v-checkbox
-              label="로그인 유지(미구현)"
+          <!-- <v-row>
+            <v-checkbox
+              v-model="loginData.keepLogin"
+              label="로그인 유지"
               color="primary"
               hide-details
               density="compact"
-            ></v-checkbox> -->
-          </v-row>
+            >
+            </v-checkbox>
+          </v-row> -->
         </v-form>
 
         <!-- Help area -->
@@ -126,10 +128,11 @@ const systemStore = useSystemStore();
 const modalStore = useModalStore();
 
 // Data
-const formData = reactive({
+const loginData = reactive({
   my_id: "",
-  pw: "",
+  password: "",
 });
+// const keepLogin = ref(false);
 const loggingIn = ref(false);
 const adminLogin = reactive({
   value: false,
@@ -152,7 +155,7 @@ const login = async () => {
   loggingIn.value = true;
   if (
     !adminLogin.value &&
-    (!validMyID(formData.my_id) || !validPW(formData.pw))
+    (!validMyID(loginData.my_id) || !validPW(loginData.password))
   ) {
     await loginFailed();
     loggingIn.value = false;
@@ -160,18 +163,12 @@ const login = async () => {
   }
 
   systemStore
-    .login({ my_id: formData.my_id, password: formData.pw })
+    .login(loginData)
     .then(async (result) => {
       if (result) router.push({ name: pages.Main });
       else await loginFailed();
     })
-    .catch(async () => {
-      await modalStore.openModal(
-        "오류가 발생했습니다.\n 나중에 다시 시도하거나 관리자에게 문의 바랍니다.",
-        null,
-        { actions: modalPresets.OK }
-      );
-    })
+    .catch(async () => modalStore.showErrorMessage())
     .finally(() => {
       loggingIn.value = false;
       adminLogin.clear();

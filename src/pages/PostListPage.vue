@@ -2,7 +2,7 @@
   <v-card class="background">
     <v-card-title class="pt-5 pl-7 d-flex align-baseline">
       <p class="board-name mr-3">{{ props.boardId }}</p>
-      <p class="board-desc">게시판 소개글</p>
+      <p class="board-desc"></p>
       <v-spacer></v-spacer>
       <custom-btn
         size="small"
@@ -16,11 +16,11 @@
 
     <v-card-text class="list-area">
       <div
-        v-if="posts.length == 0"
-        class="d-flex fill-height justify-center align-center"
+        v-if="!posts && !loading"
+        class="d-flex flex-column justify-center align-center"
       >
         <v-icon icon="mdi-alert-outline" color="error" size="128"> </v-icon>
-        <span style="font-size: 24px">아직 등록된 글이 없습니다.</span>
+        <p style="font-size: 24px">아직 등록된 글이 없습니다.</p>
       </div>
       <template v-else>
         <v-list density="compact">
@@ -30,7 +30,7 @@
               defaultColor="black"
               :to="{
                 name: pages.ViewPost,
-                params: { boardId: props.boardId, postId: post.postId },
+                params: { boardId: props.boardId, postId: post.id },
               }"
             >
               <p class="title-text">
@@ -43,12 +43,12 @@
                 <custom-btn
                   :to="{
                     name: pages.UserInfo,
-                    params: { userId: post.writer.id },
+                    params: { userId: post.user.id },
                   }"
                 >
-                  {{ post.writer.name }}
+                  {{ post.user.name }}
                 </custom-btn>
-                <p>{{ post.date.toLocaleDateString() }}</p>
+                <p>{{ new Date(post.date_updated).toLocaleDateString() }}</p>
               </div>
             </template>
           </v-list-item>
@@ -74,15 +74,13 @@
 <script setup>
 import CustomBtn from "@/components/CustomBtn.vue";
 
-import { defineProps, reactive, onBeforeMount } from "vue";
+import { ref, reactive, defineProps, onBeforeMount } from "vue";
 import { pages } from "@/router";
-import { useDevelopStore } from "@/store";
-
-// Pinia storage
-const developStore = useDevelopStore();
+import { API, apiRequest, parseResponse } from "@/modules/Services/API";
 
 // Data
 const posts = reactive([]);
+const loading = ref(true);
 
 // Props
 const props = defineProps({
@@ -91,10 +89,26 @@ const props = defineProps({
 
 // Hook
 onBeforeMount(() => {
-  posts.push(...developStore.posts);
+  new apiRequest()
+    .execute(API.SearchPosts, { search_type: 0 }, [
+      "id",
+      "title",
+      "date_updated",
+      "user { id name }",
+    ])
+    .then(parseResponse)
+    .then((response) => {
+      posts.push(...response[API.SearchPosts]);
+    })
+    .catch((err) => {
+      /**
+       * TODO: 에러 처리
+       */
+      console.log(err);
+    })
+    .finally(() => (loading.value = false));
 });
 </script>
-
 <style scoped>
 .background {
   margin-top: 40px;

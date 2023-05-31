@@ -364,6 +364,7 @@ const boardsInclude = () => {
   background-color: white;
   font-size: 1.2rem;
   z-index: 2;
+  min-width: 1024px;
 }
 
 .boards-list {

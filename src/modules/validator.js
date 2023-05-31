@@ -77,11 +77,13 @@ export const EngNumSCOnly = (value) => {
 };
 
 export const validityColor = (validity) => {
-  if (validity == null) return "warning";
+  if (validity === undefined) return "white";
+  if (validity === null) return "warning";
   return validity ? "secondary_accent" : "error_variant";
 };
 
 export const validityIcon = (validity) => {
-  if (validity == null) return "mdi-exclamation";
+  if (validity === undefined) return "mdi-loading";
+  if (validity === null) return "mdi-exclamation";
   return validity ? "mdi-check" : "mdi-close";
 };

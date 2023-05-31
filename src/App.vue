@@ -21,12 +21,21 @@
 import TopNavbar from "./components/TopNavbar.vue";
 import CustomDialog from "./components/CustomDialog.vue";
 
-import { computed } from "vue";
+import { computed, onMounted } from "vue";
 import router from "@/router";
+import { useSystemStore } from "./store";
 
+// Pinia
+const systemStore = useSystemStore();
+
+// Data
 const displayTopNavbar = computed(
   () => router.currentRoute.value.meta.useTopNavbar
 );
+
+onMounted(() => {
+  systemStore.verify();
+});
 </script>
 
 <style scoped>

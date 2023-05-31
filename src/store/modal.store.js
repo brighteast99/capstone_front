@@ -76,6 +76,16 @@ const useModalStore = defineStore("modal", () => {
     modalState.display = false;
     modalData.response.value = response;
   };
+  const showErrorMessage = () =>
+    openModal(
+      "오류가 발생했습니다.\n나중에 다시 시도하거나 관리자에게 문의 바랍니다.",
+      null,
+      { actions: modalPresets.OK }
+    );
+  const showNoPermissionMessage = () =>
+    openModal("권한이 없습니다!", null, {
+      actions: [{ label: "OK" }],
+    });
 
   // Internal function
   const validOption = (option) => {
@@ -90,12 +100,12 @@ const useModalStore = defineStore("modal", () => {
 
     if (Object.prototype.hasOwnProperty.call(option, "actions")) {
       if (typeof option.actions != "object") return false;
-      if (option.actions?.length == 0) return false;
+      if (!option.actions?.length) return false;
       // Action must have label property, which is not empty
       for (const action of option.actions) {
         if (!Object.prototype.hasOwnProperty.call(action, "label"))
           return false;
-        if (action.label.length == 0) return false;
+        if (!action.label.length) return false;
       }
     }
 
@@ -108,6 +118,8 @@ const useModalStore = defineStore("modal", () => {
     modalOptions,
     openModal,
     closeModal,
+    showErrorMessage,
+    showNoPermissionMessage,
   };
 });
 

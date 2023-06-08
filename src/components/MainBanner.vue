@@ -7,7 +7,7 @@
     touch
     cycle
     interval="5000"
-    color="primary_accent"
+    color="primary"
   >
     <v-carousel-item v-for="image in props.images" :key="image">
       <v-img :src="image" cover :height="props.height"> </v-img>
@@ -18,7 +18,7 @@
 <script setup>
 import { ref, defineProps, onBeforeMount } from "vue";
 
-const current = ref(null);
+const current = ref();
 
 const props = defineProps({
   height: {
@@ -36,5 +36,9 @@ onBeforeMount(() => {
 <style scoped>
 .banner-area {
   height: 100%;
+}
+
+.v-btn--active {
+  color: white;
 }
 </style>

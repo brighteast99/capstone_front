@@ -1,10 +1,10 @@
 <template>
-  <v-form ref="form" style="width: 100%" @submit.prevent="submit">
+  <v-form style="width: 100%" @submit.prevent="register">
     <v-text-field
       v-model="formData.name.value"
       label="닉네임"
       autofocus
-      :error="!formData.name.validity.value && formData.name.validity.display"
+      :error="formData.name.validity.display && !formData.name.validity.value"
       @update:focused="formData.name.tooltip = $event"
       @blur="formData.name.validity.display = true"
     >
@@ -45,7 +45,7 @@
       label="아이디"
       v-model="formData.my_id.value"
       :loading="formData.my_id.validity.unique === undefined"
-      :error="!formData.my_id.validity.value && formData.my_id.validity.display"
+      :error="formData.my_id.validity.display && !formData.my_id.validity.value"
       @update:model-value="checkIdUniqueness()"
       @update:focused="formData.my_id.tooltip = $event"
       @blur="formData.my_id.validity.display = true"
@@ -83,19 +83,29 @@
             <v-icon
               class="mr-3"
               :class="{
-                'mdi-spin': formData.my_id.validity.unique === undefined,
+                'mdi-spin': checkingID,
               }"
-              :icon="Validator.validityIcon(formData.my_id.validity.unique)"
-              :color="Validator.validityColor(formData.my_id.validity.unique)"
+              :icon="
+                checkingID
+                  ? 'mdi-loading'
+                  : Validator.validityIcon(formData.my_id.validity.unique)
+              "
+              :color="
+                checkingID
+                  ? 'white'
+                  : Validator.validityColor(formData.my_id.validity.unique)
+              "
             ></v-icon>
           </template>
           {{
-            formData.my_id.validity.unique === undefined
+            failedCheckingID
+              ? "중복 확인 실패"
+              : checkingID
               ? "확인중"
+              : !checkedID
+              ? "중복 확인 필요"
               : formData.my_id.validity.unique
               ? "사용 가능"
-              : formData.my_id.validity.unique === null
-              ? "중복 확인 필요"
               : "이미 사용중인 아이디"
           }}
         </custom-btn>
@@ -105,10 +115,12 @@
     <v-text-field
       label="비밀번호"
       v-model="formData.pw.value"
-      :error="!formData.pw.validity.value && formData.pw.validity.display"
-      :type="formData.pw.visibility ? 'text' : 'password'"
-      :append-inner-icon="formData.pw.visibility ? 'mdi-eye-off' : 'mdi-eye'"
-      @click:append-inner="formData.pw.visibility = !formData.pw.visibility"
+      :error="formData.pw.validity.display && !formData.pw.validity.value"
+      :type="formData.pw.visibility.value ? 'text' : 'password'"
+      :append-inner-icon="
+        formData.pw.visibility.value ? 'mdi-eye-off' : 'mdi-eye'
+      "
+      @click:append-inner="formData.pw.visibility.toggle()"
       @update:focused="formData.pw.tooltip = $event"
       @blur="formData.pw.validity.display = true"
     >
@@ -175,16 +187,14 @@
       label="비밀번호 확인"
       v-model="formData.pwConfirm.value"
       :error="
-        !formData.pwConfirm.validity.value &&
-        formData.pwConfirm.validity.display
+        formData.pwConfirm.validity.display &&
+        !formData.pwConfirm.validity.value
       "
-      :type="formData.pwConfirm.visibility ? 'text' : 'password'"
+      :type="formData.pwConfirm.visibility.value ? 'text' : 'password'"
       :append-inner-icon="
-        formData.pwConfirm.visibility ? 'mdi-eye-off' : 'mdi-eye'
+        formData.pwConfirm.visibility.value ? 'mdi-eye-off' : 'mdi-eye'
       "
-      @click:append-inner="
-        formData.pwConfirm.visibility = !formData.pwConfirm.visibility
-      "
+      @click:append-inner="formData.pwConfirm.visibility.toggle()"
       @update:focused="formData.pwConfirm.tooltip = $event"
       @blur="formData.pwConfirm.validity.display = true"
     >
@@ -223,7 +233,7 @@
           :items="formData.email.suggestions"
           :loading="formData.email.validity.unique === undefined"
           :error="
-            !formData.email.validity.value && formData.email.validity.display
+            formData.email.validity.display && !formData.email.validity.value
           "
           @update:model-value="chechEmailUniqueness()"
           @focus="formData.email.tooltip = true"
@@ -234,6 +244,7 @@
         >
         </v-combobox>
       </template>
+
       <custom-btn default-color="white">
         <template v-slot:prepend>
           <v-icon
@@ -249,20 +260,30 @@
           <v-icon
             class="mr-3"
             :class="{
-              'mdi-spin': formData.email.validity.unique === undefined,
+              'mdi-spin': checkingEmail,
             }"
-            :icon="Validator.validityIcon(formData.email.validity.unique)"
-            :color="Validator.validityColor(formData.email.validity.unique)"
+            :icon="
+              checkingEmail
+                ? 'mdi-loading'
+                : Validator.validityIcon(formData.email.validity.unique)
+            "
+            :color="
+              checkingEmail
+                ? 'white'
+                : Validator.validityColor(formData.email.validity.unique)
+            "
           ></v-icon>
         </template>
         {{
-          formData.email.validity.unique === undefined
+          failedCheckingEmail
+            ? "중복 확인 실패"
+            : checkingEmail
             ? "확인중"
+            : !checkedEmail
+            ? "중복 확인 필요"
             : formData.email.validity.unique
             ? "사용 가능"
-            : formData.email.validity.unique === null
-            ? "가입하지 않은 이메일"
-            : "이미 가입한 이메일"
+            : "가입하지 않은 이메일"
         }}
       </custom-btn>
     </v-tooltip>
@@ -307,20 +328,15 @@
       </template>
     </v-checkbox>
 
-    <div @click="submit">
+    <div @click="register">
       <v-btn
         block
-        :disabled="
-          formData.my_id.validity.unique === undefined ||
-          formData.email.validity.unique === undefined ||
-          !canSubmit
-        "
+        :disabled="checkingID || checkingEmail || !canSubmit"
         :loading="submitting"
       >
         {{
           canSubmit
-            ? formData.my_id.validity.unique === undefined ||
-              formData.email.validity.unique === undefined
+            ? checkingID || checkingEmail
               ? "정보를 확인하고 있어요"
               : "회원가입"
             : "항목을 모두 작성해야 해요"
@@ -333,10 +349,9 @@
 <script setup>
 import CustomBtn from "@/components/CustomBtn.vue";
 
-import { ref, reactive, computed } from "vue";
+import { reactive, computed } from "vue";
 import { onBeforeRouteLeave } from "vue-router";
 import * as Validator from "@/modules/validator";
-import { API, apiRequest, parseResponse } from "@/modules/Services/API";
 import { useModalStore } from "@/store";
 import {
   modalActions,
@@ -344,10 +359,10 @@ import {
   modalPresets,
 } from "@/store/modal.store";
 import router, { pages } from "@/router";
-import { useArrayEvery, useDebounceFn } from "@vueuse/core";
-
-// Component
-const form = ref(null);
+import { useDebounceFn } from "@vueuse/core";
+import { createToggle } from "@/modules/utility";
+import { API, useAPI } from "@/modules/Services/API";
+import { constructQuery } from "@/modules/Services/queryBuilder";
 
 // Pinia storage
 const modalStore = useModalStore();
@@ -388,7 +403,7 @@ const formData = reactive({
   pw: {
     value: "",
     tooltip: false,
-    visibility: false,
+    visibility: createToggle(false),
     validity: {
       display: false,
       length: computed(() => Validator.lengthBetween(formData.pw.value, 8, 20)),
@@ -402,7 +417,7 @@ const formData = reactive({
   pwConfirm: {
     value: "",
     tooltip: false,
-    visibility: false,
+    visibility: createToggle(false),
     validity: {
       display: false,
       value: computed(() => formData.pw.value === formData.pwConfirm.value),
@@ -447,12 +462,9 @@ const formData = reactive({
     },
   },
 });
-const canSubmit = useArrayEvery(
-  Object.values(formData),
-  (field) => field.validity.value != false
+const canSubmit = computed(() =>
+  Object.values(formData).every((field) => field.validity.value != false)
 );
-const submitting = ref(false);
-const completed = ref(false);
 
 /**
  * TODO 실제 약관으로 변경
@@ -467,17 +479,11 @@ const panels = reactive([0, 1]);
 
 // Navigation guards
 onBeforeRouteLeave(async (to, from, next) => {
-  if (completed.value) return next();
-  if (
-    !formData.name.value &&
-    !formData.my_id.value &&
-    !formData.pw.value &&
-    !formData.pwConfirm.value &&
-    !formData.email.value
-  )
+  if (completed) return next();
+  if (Object.values(formData).every((field) => !field.value.length))
     return next();
 
-  let confirm = await modalStore.openModal(
+  const response = await modalStore.openModal(
     "회원가입을 중단하시겠습니까?\n입력한 내용은 사라집니다.",
     null,
     {
@@ -492,78 +498,84 @@ onBeforeRouteLeave(async (to, from, next) => {
     }
   );
 
-  if (confirm === modalResponses.Yes) return next();
-  else next(false);
+  return next(response === modalResponses.Yes);
 });
 
 // Methods
+const {
+  isLoading: checkingID,
+  isFinished: checkedID,
+  error: failedCheckingID,
+  execute: checkID,
+} = useAPI();
 const checkIdUniqueness = useDebounceFn(() => {
-  formData.my_id.validity.unique = undefined;
-  new Promise((resolve, reject) => {
-    if (!formData.my_id.value?.trim()) reject();
-
-    new apiRequest()
-      .execute(API.CheckExistingID, { my_id: formData.my_id.value })
-      .then(parseResponse)
-      .then((response) => {
-        if (response[API.CheckExistingID]) resolve(false);
-        else resolve(true);
-      })
-      .catch(() => reject());
-  })
-    .then((uniqueness) => (formData.my_id.validity.unique = uniqueness))
+  checkID(
+    constructQuery({
+      name: API.CheckExistingID,
+      args: {
+        my_id: formData.my_id.value,
+      },
+    })
+  )
+    .then(
+      ({ data: response }) =>
+        (formData.my_id.validity.unique =
+          !response.value.data[API.CheckExistingID])
+    )
     .catch(() => (formData.my_id.validity.unique = null));
 }, 250);
+const {
+  isLoading: checkingEmail,
+  isFinished: checkedEmail,
+  error: failedCheckingEmail,
+  execute: checkEmail,
+} = useAPI();
 const chechEmailUniqueness = useDebounceFn(() => {
-  formData.email.validity.unique = undefined;
-  new Promise((resolve, reject) => {
-    if (!formData.email.value?.trim()) reject();
-
-    new apiRequest()
-      .execute(API.CheckExistingEmail, {
+  checkEmail(
+    constructQuery({
+      name: API.CheckExistingEmail,
+      args: {
         email: formData.email.value,
-      })
-      .then(parseResponse)
-      .then((response) => {
-        if (response[API.CheckExistingEmail]) resolve(false);
-        else resolve(true);
-      })
-      .catch(() => reject());
-  })
-    .then((uniqueness) => (formData.email.validity.unique = uniqueness))
+      },
+    })
+  )
+    .then(
+      ({ data: response }) =>
+        (formData.email.validity.unique =
+          !response.value.data[API.CheckExistingEmail])
+    )
     .catch(() => (formData.email.validity.unique = null));
 }, 250);
-const submit = () => {
-  if (!canSubmit.value) {
-    for (const field of Object.values(formData)) {
-      field.validity.display = true;
-    }
-    return;
-  }
-  submitting.value = true;
-
-  new apiRequest()
-    .execute(
-      API.SignUp,
-      {
+const {
+  isLoading: submitting,
+  isFinished: completed,
+  execute: submitForm,
+} = useAPI();
+const register = () => {
+  submitForm(
+    constructQuery({
+      name: API.SignUp,
+      args: {
         name: formData.name.value,
         my_id: formData.my_id.value,
         password: formData.pw.value,
         email: formData.email.value,
       },
-      "id"
-    )
-    .then(async () => {
-      completed.value = true;
-      await modalStore.openModal(
-        "회원가입에 성공했습니다.\n로그인 화면으로 이동합니다.",
-        null,
-        { actions: modalPresets.OK }
-      );
-      router.push({ name: pages.Login });
+      fields: "id",
     })
-    .catch(async () => await modalStore.showErrorMessage())
-    .finally(() => (submitting.value = false));
+  )
+    .then(({ data: response }) => {
+      if (!response.value.data[API.SignUp]) throw new Error();
+      else
+        modalStore
+          .openModal(
+            "회원가입에 성공했습니다.\n로그인 화면으로 이동합니다.",
+            null,
+            { actions: modalPresets.OK }
+          )
+          .then(() => router.push({ name: pages.Login }));
+    })
+    .catch(modalStore.showErrorMessage);
 };
 </script>
 

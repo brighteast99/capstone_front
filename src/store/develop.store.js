@@ -7,16 +7,16 @@ export const useDevelopStore = defineStore(
     const announcements = reactive([
       {
         title: "이용안내",
-        postId: "111",
+        threadId: "111",
       },
       {
         title: "본 서비스는 현재 시범 운영중입니다.",
-        postId: "222",
+        threadId: "222",
       },
       {
         title:
           "공지 글자수 테스트 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890",
-        postId: "333",
+        threadId: "333",
       },
     ]);
 
@@ -27,62 +27,62 @@ export const useDevelopStore = defineStore(
       },
     ]);
 
-    const newPosts = reactive([
+    const newThreads = reactive([
       {
         title: "새 글 1",
         boardId: "latest",
-        postId: "11",
+        threadId: "11",
       },
       {
         title: "새 글 2",
         boardId: "latest",
-        postId: "22",
+        threadId: "22",
       },
       {
         title: "새 글 3",
         boardId: "latest",
-        postId: "33",
+        threadId: "33",
       },
       {
         title:
           "긴 제목 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890",
         boardId: "latest",
-        postId: "44",
+        threadId: "44",
       },
     ]);
 
-    const trendingPosts = reactive([
+    const trendingThreads = reactive([
       {
         title: "많이 본 글 1",
         boardId: "trending",
-        postId: "1111",
+        threadId: "1111",
       },
       {
         title: "많이 본 글 2",
         boardId: "trending",
-        postId: "2222",
+        threadId: "2222",
       },
       {
         title: "많이 본 글 3",
         boardId: "trending",
-        postId: "3333",
+        threadId: "3333",
       },
       {
         title:
           "긴 제목 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890",
         boardId: "trending",
-        postId: "4444",
+        threadId: "4444",
       },
     ]);
 
-    const posts = reactive([
+    const threads = reactive([
       {
         writer: {
           id: 1,
           name: "홍길동",
         },
         title: "테스트 게시물 1",
-        postId: "0",
+        threadId: "0",
         date: new Date(),
       },
       {
@@ -91,7 +91,7 @@ export const useDevelopStore = defineStore(
           name: "홍길동",
         },
         title: "테스트 게시물 2",
-        postId: "1",
+        threadId: "1",
         date: new Date(),
       },
       {
@@ -100,7 +100,7 @@ export const useDevelopStore = defineStore(
           name: "홍길동",
         },
         title: "테스트 게시물 3",
-        postId: "2",
+        threadId: "2",
         date: new Date(),
       },
       {
@@ -109,7 +109,7 @@ export const useDevelopStore = defineStore(
           name: "홍길동",
         },
         title: "테스트 게시물 4",
-        postId: "3",
+        threadId: "3",
         date: new Date(),
       },
       {
@@ -118,7 +118,7 @@ export const useDevelopStore = defineStore(
           name: "홍길동",
         },
         title: "테스트 게시물 5",
-        postId: "4",
+        threadId: "4",
         date: new Date(),
       },
       {
@@ -127,12 +127,12 @@ export const useDevelopStore = defineStore(
           name: "홍길동",
         },
         title: "테스트 게시물 6",
-        postId: "5",
+        threadId: "5",
         date: new Date(),
       },
     ]);
 
-    const postData = reactive({
+    const threadData = reactive({
       writer: {
         id: 0,
         name: "홍길동",
@@ -157,18 +157,18 @@ export const useDevelopStore = defineStore(
       },
     });
 
-    const updatePost = (newPost) => {
-      Object.assign(postData, newPost);
+    const updateThread = (newThread) => {
+      Object.assign(threadData, newThread);
     };
 
     return {
       announcements,
       boards,
-      posts,
-      newPosts,
-      trendingPosts,
-      postData,
-      updatePost,
+      threads,
+      newThreads,
+      trendingThreads,
+      threadData,
+      updateThread,
     };
   },
   { persist: true }

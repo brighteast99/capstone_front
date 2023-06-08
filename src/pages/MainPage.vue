@@ -22,22 +22,22 @@
 
       <v-row>
         <v-col cols="6">
-          <post-list-mini
+          <thread-list-mini
             board-name="최신 프로젝트"
             board-desc="따끈따끈한 프로젝트들을 만나보세요"
             board-id="Latest"
-            :items="newPosts"
+            :items="newThreads"
             elevation="0"
-          ></post-list-mini>
+          ></thread-list-mini>
         </v-col>
         <v-col cols="6">
-          <post-list-mini
+          <thread-list-mini
             board-name="인기 프로젝트"
             board-desc="지금 떠오르는 프로젝트들은?"
             board-id="Trending"
-            :items="trendingPosts"
+            :items="trendingThreads"
             elevation="0"
-          ></post-list-mini>
+          ></thread-list-mini>
         </v-col>
       </v-row>
     </v-container>
@@ -47,7 +47,7 @@
 <script setup>
 import MainBanner from "@/components/MainBanner.vue";
 import AnnouncementCard from "@/components/AnnouncementCard.vue";
-import PostListMini from "@/components/PostListMini.vue";
+import ThreadListMini from "@/components/ThreadListMini.vue";
 
 import { reactive, onBeforeMount } from "vue";
 import { useDevelopStore } from "@/store";
@@ -60,8 +60,8 @@ const developStore = useDevelopStore();
 
 // Data
 const bannerImages = reactive([]);
-const newPosts = reactive([]);
-const trendingPosts = reactive([]);
+const newThreads = reactive([]);
+const trendingThreads = reactive([]);
 
 // Hook
 onBeforeMount(() => {
@@ -72,7 +72,7 @@ onBeforeMount(() => {
     // "https://picsum.photos/1920/360.webp?random=1",
   );
 
-  newPosts.push(...developStore.newPosts);
-  trendingPosts.push(...developStore.trendingPosts);
+  newThreads.push(...developStore.newThreads);
+  trendingThreads.push(...developStore.trendingThreads);
 });
 </script>

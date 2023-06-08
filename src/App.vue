@@ -2,8 +2,6 @@
   <v-app>
     <!-- Header -->
     <top-navbar v-show="displayTopNavbar"></top-navbar>
-    <!-- Modal -->
-    <custom-dialog></custom-dialog>
     <!-- Main -->
     <v-main
       :style="{
@@ -19,7 +17,6 @@
 </template>
 <script setup>
 import TopNavbar from "./components/TopNavbar.vue";
-import CustomDialog from "./components/CustomDialog.vue";
 
 import { computed, onMounted } from "vue";
 import router from "@/router";

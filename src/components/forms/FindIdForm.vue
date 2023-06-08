@@ -1,13 +1,13 @@
 <template>
   <!-- Finding form -->
-  <template v-if="stepper.isCurrent('input-email')">
-    <v-form style="width: 100%" @submit.prevent="submit">
+  <template v-if="isCurrent('input-email')">
+    <v-form style="width: 100%" @submit.prevent="findUser">
       <v-text-field label="이메일" v-model="formStates.email" autofocus>
       </v-text-field>
 
       <v-btn
         type="submit"
-        :disabled="!formStates.valid || isLoading"
+        :disabled="!formStates.valid"
         :loading="isLoading"
         block
         color="primary"
@@ -18,20 +18,9 @@
   </template>
 
   <!-- Result view -->
-  <template v-if="stepper.isCurrent('result')">
+  <template v-if="isCurrent('result')">
     <v-card class="result-card">
       <v-card-text class="result-card-text">
-        <custom-btn
-          class="copy-btn"
-          size="x-small"
-          @click="
-            copy(formStates.my_id);
-            tooltipMessage = tooltipMessageAlt;
-          "
-        >
-          <v-icon icon="mdi-content-copy"> </v-icon>
-          <v-tooltip activator="parent"> {{ tooltipMessage }} </v-tooltip>
-        </custom-btn>
         {{ my_id }}
       </v-card-text>
 
@@ -56,20 +45,14 @@
 </template>
 
 <script setup>
-import CustomBtn from "../CustomBtn.vue";
-
 import { reactive, ref, computed, defineEmits } from "vue";
-import { API, useAPI, constructQuery } from "@/modules/Services/useAPI";
+import { API, useAPI } from "@/modules/Services/API";
+import { constructQuery } from "@/modules/Services/queryBuilder";
 import { validEmail } from "@/modules/validator";
 import { useModalStore } from "@/store";
 import { modalPresets } from "@/store/modal.store";
 import router, { pages } from "@/router";
-import {
-  useStepper,
-  watchOnce,
-  useClipboard,
-  refAutoReset,
-} from "@vueuse/core";
+import { useStepper, whenever } from "@vueuse/core";
 
 // Pinia Storage
 const modalStore = useModalStore();
@@ -79,44 +62,38 @@ const formStates = reactive({
   email: "",
   valid: computed(() => validEmail(formStates.email)),
 });
-const my_id = ref(null);
-const tooltipMessage = refAutoReset("아이디 복사", 1000);
-const tooltipMessageAlt = "복사 완료!";
-const stepper = useStepper(["input-email", "result"]);
-const { copy } = useClipboard({ legacy: true });
+const my_id = ref();
+const { isCurrent, isLast, goToNext } = useStepper(["input-email", "result"]);
 
 // Emits
 const emits = defineEmits(["completed"]);
 
-// Watches
-watchOnce(my_id, () => {
-  emits("completed", true);
-});
+// Watch
+whenever(isLast, () => emits("completed", true));
 
 // Methods
-const { isLoading, execute } = new useAPI({
-  onSuccess: async (res) => {
-    my_id.value = res.data[API.SearchUserForMyID];
-
-    if (!my_id.value)
-      await modalStore.openModal(
-        "가입 정보가 없습니다.\n이메일 주소를 확인해주세요.",
-        null,
-        { actions: modalPresets.OK }
-      );
-    else stepper.goToNext();
-  },
-  onError: async () => await modalStore.showErrorMessage(),
-});
-const submit = () => {
-  execute(
+const { isLoading, execute: _findUser } = new useAPI();
+const findUser = () => {
+  _findUser(
     constructQuery({
       name: API.SearchUserForMyID,
       args: {
         email: formStates.email,
       },
     })
-  );
+  )
+    .then(({ data: response }) => {
+      my_id.value = response.value.data[API.SearchUserForMyID];
+
+      if (!my_id.value)
+        modalStore.openModal(
+          "가입 정보가 없습니다.\n이메일 주소를 확인해주세요.",
+          null,
+          { actions: modalPresets.OK }
+        );
+      else goToNext();
+    })
+    .catch(modalStore.showErrorMessage);
 };
 </script>
 
@@ -138,12 +115,5 @@ const submit = () => {
   align-items: center;
   font-size: 1.5em;
   position: relative;
-}
-
-.copy-btn {
-  position: absolute;
-  padding: 0;
-  top: 0.5em;
-  right: 0.5em;
 }
 </style>

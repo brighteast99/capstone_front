@@ -1,7 +1,8 @@
-import { reactive, computed } from "vue";
+import { ref, reactive, computed } from "vue";
 import { defineStore } from "pinia";
 import { API, apiRequest, parseResponse } from "@/modules/Services/API";
 import router, { pages } from "@/router";
+import { useModalStore } from "./modal.store";
 
 export const useSystemStore = defineStore(
   "system",
@@ -12,62 +13,96 @@ export const useSystemStore = defineStore(
       email: null,
       my_id: "",
       password: "",
+      is_staff: null,
     });
+    const readThreads = ref([]);
+    let cleanupTimer = null;
 
     const loggedIn = computed(() => currentUser.id != null);
 
-    const login = (loginData) => {
-      return new Promise((resolve, reject) => {
-        new apiRequest()
-          .execute(API.SignIn, loginData, ["id", "name", "email"])
-          .then(parseResponse)
-          .then((response) => {
-            const userData = response[API.SignIn];
-
-            if (!userData) resolve(false);
-            else {
-              Object.assign(currentUser, userData);
-              currentUser.my_id = loginData.my_id;
-              currentUser.password = loginData.password;
-              currentUser.id = Number(currentUser.id);
-              resolve(true);
-            }
-          })
-          .catch((err) => {
-            reject(err);
-          });
+    const login = (userData) => Object.assign(currentUser, userData);
+    const logOut = async () => {
+      Object.assign(currentUser, {
+        id: null,
+        name: null,
+        email: null,
+        my_id: "",
+        password: "",
+        is_staff: null,
       });
-    };
+      readThreads.value = [];
+      if (cleanupTimer) clearTimeout(cleanupTimer);
+      cleanupTimer = null;
 
-    const logOut = () => {
-      currentUser.id = null;
-      currentUser.name = null;
-      currentUser.email = null;
-      currentUser.my_id = "";
-      currentUser.password = "";
+      if (router.currentRoute.value.meta.requireLogin) {
+        const modalStore = new useModalStore();
+        const response = await modalStore.showNeedLoginMessage();
 
-      if (router.currentRoute.value.meta.requireLogin)
-        router.replace({ name: pages.Main });
+        if (response === "Login") router.push({ name: pages.Login });
+        else router.push({ name: pages.Main });
+      }
     };
 
     const verify = () => {
-      if (currentUser.id != null)
+      if (currentUser.id != null) {
         new apiRequest()
           .execute(
             API.SignIn,
             { my_id: currentUser.my_id, password: currentUser.password },
-            "id"
+            ["id", "is_staff"]
           )
           .then(parseResponse)
           .then((response) => {
-            const userData = response[API.SignIn];
-            if (!userData) logOut();
-            if (userData.id != currentUser.id) logOut();
-          })
-          .catch(() => logOut());
+            if (response[API.SignIn].id != currentUser.id) logOut();
+            if (currentUser.is_staff && !response[API.SignIn].is_staff)
+              logOut();
+          });
+      }
     };
 
-    return { currentUser, loggedIn, login, logOut, verify };
+    const readThread = (threadId) => {
+      if (readThreads.value.find((x) => x.id == threadId)) return;
+
+      new apiRequest()
+        .execute(API.ReadThread, { id: Number(threadId) })
+        .then(parseResponse)
+        .then((response) => {
+          if (!response[API.ReadThread]) throw new Error();
+
+          readThreads.value.push({ id: threadId, timestamp: new Date() });
+          if (cleanupTimer == null) startHistoryCleanup();
+        });
+    };
+
+    /**
+     * Remove read history older than 1 hour
+     */
+    const startHistoryCleanup = () => {
+      while (
+        new Date() -
+          new Date(readThreads.value[readThreads.value.length - 1]?.timestamp) >
+        1000 * 60 * 60
+      )
+        readThreads.value.pop();
+
+      if (readThreads.value.length)
+        cleanupTimer = setTimeout(
+          startHistoryCleanup,
+          new Date() -
+            new Date(readThreads.value[readThreads.value.length - 1].timestamp)
+        );
+      else cleanupTimer = null;
+    };
+    return {
+      currentUser,
+      readThreads,
+      loggedIn,
+      login,
+      logOut,
+      verify,
+      readThread,
+      startHistoryCleanup,
+    };
   },
   { persist: true }
 );

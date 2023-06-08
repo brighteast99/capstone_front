@@ -1,12 +1,27 @@
 import { reactive } from "vue";
 import { defineStore } from "pinia";
+import { createToggle } from "@/modules/utility";
 
 // enums
+const modalResponses = {
+  Yes: "Yes",
+  OK: "OK",
+  No: "No",
+  Cancel: "Cancel",
+  Delete: "Delete",
+};
+Object.freeze(modalResponses);
 const modalActions = {
-  OK: { label: "확인", response: "OK" },
-  Cancel: { label: "취소", color: "error", response: "Cancel" },
-  Yes: { label: "예", response: "Yes" },
-  No: { label: "아니요", color: "black", response: "No" },
+  OK: { label: "확인", response: modalResponses.OK },
+  Cancel: { label: "취소", color: "error", response: modalResponses.Cancel },
+  SafeCancel: {
+    label: "취소",
+    color: "black",
+    response: modalResponses.Cancel,
+  },
+  Yes: { label: "예", response: modalResponses.Yes },
+  No: { label: "아니요", color: "black", response: modalResponses.No },
+  Delete: { label: "삭제", color: "error", response: modalResponses.Delete },
 };
 Object.freeze(modalActions);
 const modalPresets = {
@@ -17,19 +32,10 @@ const modalPresets = {
   OKCancel: [modalActions.OK, modalActions.Cancel],
 };
 Object.freeze(modalPresets);
-const modalResponses = {
-  Yes: "Yes",
-  OK: "OK",
-  No: "No",
-  Cancel: "Cancel",
-};
-Object.freeze(modalResponses);
 
 const useModalStore = defineStore("modal", () => {
   // States
-  const modalState = reactive({
-    display: false,
-  });
+  const { value: displayModal, toggle: toggleModal } = createToggle(false);
   const modalData = reactive({
     title: null,
     content: null,
@@ -59,7 +65,7 @@ const useModalStore = defineStore("modal", () => {
         modalOptions.persistent = options.persistent ?? false;
         modalOptions.actions = options.actions ?? modalPresets.YesNo;
 
-        modalState.display = true;
+        toggleModal(true);
 
         let target = {};
         modalData.response = new Proxy(target, {
@@ -73,7 +79,7 @@ const useModalStore = defineStore("modal", () => {
     });
   };
   const closeModal = (response) => {
-    modalState.display = false;
+    toggleModal(false);
     modalData.response.value = response;
   };
   const showErrorMessage = () =>
@@ -85,6 +91,13 @@ const useModalStore = defineStore("modal", () => {
   const showNoPermissionMessage = () =>
     openModal("권한이 없습니다!", null, {
       actions: [{ label: "OK" }],
+    });
+  const showNeedLoginMessage = () =>
+    openModal("로그인이 필요합니다.", null, {
+      actions: [
+        { label: "로그인", response: "Login" },
+        modalActions.SafeCancel,
+      ],
     });
 
   // Internal function
@@ -113,13 +126,15 @@ const useModalStore = defineStore("modal", () => {
   };
 
   return {
-    modalState,
+    displayModal,
+    toggleModal,
     modalData,
     modalOptions,
     openModal,
     closeModal,
     showErrorMessage,
     showNoPermissionMessage,
+    showNeedLoginMessage,
   };
 });
 

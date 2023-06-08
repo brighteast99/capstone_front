@@ -8,7 +8,7 @@
         </v-row>
 
         <!-- Form area -->
-        <v-form ref="loginForm" style="width: 100%" @submit.prevent="login">
+        <v-form style="width: 100%" @submit.prevent="login">
           <v-row>
             <v-text-field
               v-model="loginData.my_id"
@@ -25,14 +25,15 @@
               :error="false"
             ></v-text-field>
           </v-row>
+
           <v-row>
             <v-btn
               block
+              ref="submitBtn"
               type="submit"
               color="primary"
-              :disabled="loggingIn"
-              :loading="loggingIn"
-              :onmousedown="adminLogin.init"
+              :disabled="isLoading"
+              :loading="isLoading"
             >
               로그인
             </v-btn>
@@ -102,6 +103,11 @@ import { modalPresets } from "@/store/modal.store";
 import LogoGroup from "@/components/LogoGroup.vue";
 import router, { pages } from "@/router";
 import { validMyID, validPW } from "@/modules/validator";
+import { onLongPress } from "@vueuse/core";
+import { API, useAPI } from "@/modules/Services/API";
+import { constructQuery } from "@/modules/Services/queryBuilder";
+
+const submitBtn = ref();
 
 // Styles
 const defaults = {
@@ -120,11 +126,9 @@ const defaults = {
   },
 };
 
-// Component
-const loginForm = ref(null);
-
 // Pinia storage
 const systemStore = useSystemStore();
+systemStore;
 const modalStore = useModalStore();
 
 // Data
@@ -133,56 +137,43 @@ const loginData = reactive({
   password: "",
 });
 // const keepLogin = ref(false);
-const loggingIn = ref(false);
-const adminLogin = reactive({
-  value: false,
-  timer: null,
-  init: () => {
-    adminLogin.clear();
-    adminLogin.timer = setTimeout(() => {
-      adminLogin.value = true;
-    }, 1000);
-  },
-  clear: () => {
-    clearTimeout(adminLogin.timer);
-    adminLogin.timer = null;
-    adminLogin.value = false;
-  },
-});
+const skipValidityCheck = ref(false);
 
 // Methods
-const login = async () => {
-  loggingIn.value = true;
+onLongPress(submitBtn, () => (skipValidityCheck.value = true), {
+  delay: 1000,
+});
+const { isLoading, execute } = useAPI();
+const login = () => {
   if (
-    !adminLogin.value &&
+    !skipValidityCheck.value &&
     (!validMyID(loginData.my_id) || !validPW(loginData.password))
-  ) {
-    await loginFailed();
-    loggingIn.value = false;
-    return;
-  }
+  )
+    return loginFailed();
 
-  systemStore
-    .login(loginData)
-    .then(async (result) => {
-      if (result) router.push({ name: pages.Main });
-      else await loginFailed();
+  execute(
+    constructQuery({
+      name: API.SignIn,
+      args: loginData,
+      fields: ["id", "name", "email", "is_staff"],
     })
-    .catch(async () => modalStore.showErrorMessage())
-    .finally(() => {
-      loggingIn.value = false;
-      adminLogin.clear();
-    });
+  )
+    .then(({ data: response }) => {
+      if (!response.value.data[API.SignIn]) loginFailed();
+      else {
+        systemStore.login(
+          Object.assign({}, loginData, response.value.data[API.SignIn])
+        );
+        router.push({ name: pages.Main, replace: true });
+      }
+    })
+    .catch(modalStore.showErrorMessage)
+    .finally(() => (skipValidityCheck.value = false));
 };
-
-const loginFailed = async () => {
-  await modalStore.openModal(
-    "아이디 또는 비밀번호가 올바르지 않습니다.",
-    null,
-    {
-      actions: modalPresets.OK,
-    }
-  );
+const loginFailed = () => {
+  modalStore.openModal("아이디 또는 비밀번호가 올바르지 않습니다.", null, {
+    actions: modalPresets.OK,
+  });
 };
 </script>
 

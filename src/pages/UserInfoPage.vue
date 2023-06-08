@@ -2,7 +2,6 @@
   <v-card class="profile-card">
     <custom-btn v-if="myInfo" class="edit-btn" size="x-small" @click="editInfo">
       <v-icon icon="mdi-pencil" size="x-large"> </v-icon>
-      <v-tooltip activator="parent"> 프로필 수정 </v-tooltip>
     </custom-btn>
     <v-container>
       <v-row>
@@ -15,7 +14,7 @@
         <v-col>
           <h1 class="userinfo-name">{{ userInfo.name }}</h1>
           <p class="userinfo-email">{{ userInfo.email }}</p>
-          <p class="userinfo-date">{{ userInfo.registerDate }} 가입</p>
+          <p class="userinfo-date">{{ userInfo.date_created }} 가입</p>
         </v-col>
       </v-row>
     </v-container>
@@ -25,6 +24,7 @@
       <v-tab value="portfolio">포트폴리오</v-tab>
       <v-tab value="recruits">진행한 프로젝트</v-tab>
       <v-tab value="participations">참여한 프로젝트</v-tab>
+      <v-tab value="bookmarks">관심을 표시한 프로젝트</v-tab>
     </v-tabs>
     <v-window v-model="tab">
       <v-window-item value="portfolio">
@@ -48,6 +48,13 @@
           어케넣지
         </div>
       </v-window-item>
+      <v-window-item value="bookmarks">
+        <div
+          class="text-h4 text-disabled d-flex justify-center align-center py-7"
+        >
+          어케넣지
+        </div>
+      </v-window-item>
     </v-window>
   </v-card>
 </template>
@@ -59,6 +66,7 @@ import { reactive, ref, computed, defineProps, onBeforeMount } from "vue";
 import { apiRequest, API, parseResponse } from "@/modules/Services/API";
 import router, { pages } from "@/router";
 import { useSystemStore } from "@/store";
+import { formatDateRelative } from "@/modules/utility";
 
 // Pinia storage
 const systemStore = useSystemStore();
@@ -68,12 +76,9 @@ const userInfo = reactive({
   name: null,
   email: null,
   date_created: null,
-  registerDate: computed(() =>
-    new Date(userInfo.date_created).toLocaleDateString()
-  ),
 });
 const myInfo = computed(() => props.userId == systemStore.currentUser.id);
-const tab = ref(null);
+const tab = ref();
 
 // Props
 const props = defineProps({
@@ -93,10 +98,9 @@ onBeforeMount(() => {
       if (!response[API.GetUser]) router.replace({ name: pages.NotFound });
 
       Object.assign(userInfo, response[API.GetUser]);
+      userInfo.date_created = formatDateRelative(userInfo.date_created);
     })
-    .catch(() => {
-      router.replace({ name: pages.ServerError });
-    });
+    .catch(() => router.replace({ name: pages.ServerError }));
 });
 
 // Methods

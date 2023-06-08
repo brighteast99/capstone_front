@@ -4,81 +4,83 @@
       <slot name="prepend"> </slot>
     </div>
     <div class="dropdown-inner">
-      <button
-        class="dropdown-inner-content"
-        @mouseenter="isHover = true"
-        @mouseleave="isHover = false"
-      >
+      <button class="dropdown-inner-content" v-element-hover="toggleHover">
         <div class="prepend-inner-icon" style="color: grey">
           <slot name="prepend-inner"> </slot>
         </div>
 
-        <p class="dropdown-selected">
-          {{ props.modelValue }}
+        <p
+          class="dropdown-selected px-2 d-block"
+          style="
+            display: block;
+            width: 100%;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            overflow: hidden;
+          "
+        >
+          {{
+            !selectedItem ? "" : selectedItem[props.itemTitle] ?? selectedItem
+          }}
         </p>
 
         <custom-btn
           class="pr-0 pl-0"
           variant="plain"
           size="12"
-          :color="dropdownOpened ? activeColor : 'black'"
-          :active="dropdownOpened || isHover"
+          :color="dropdownState ? activeColor : 'black'"
+          :active="dropdownState || isHover"
           style="align-self: center"
         >
           <v-icon
-            :icon="dropdownOpened ? 'mdi-chevron-down' : 'mdi-chevron-up'"
+            :icon="dropdownState ? 'mdi-chevron-down' : 'mdi-chevron-up'"
             size="14"
           ></v-icon>
         </custom-btn>
 
         <v-menu
           activator="parent"
-          v-model="dropdownOpened"
+          location="bottom center"
+          v-model="dropdownState"
           scroll-strategy="none"
+          offset="6"
           :open-on-hover="false"
-          @update:model-value="emits('update:dropdownState', $event)"
+          :close-on-content-click="false"
+          @update:model-value="if ($event) scrollToSelected();"
         >
-          <v-sheet
-            class="dropdown-wrapper"
-            v-click-outside="
-              () => {
-                dropdownOpened = false;
-                emits('update:dropdownState', false);
-              }
-            "
-          >
+          <v-sheet class="px-2">
             <v-expand-transition>
               <div v-if="!top" class="more-icon">
                 <v-icon icon="mdi-chevron-up" size="14"> </v-icon>
               </div>
             </v-expand-transition>
 
-            <div class="dropdown-list">
-              <div
-                v-intersect="(isInterSecting) => (top = isInterSecting)"
-                style="height: 1px"
-              ></div>
-
-              <custom-btn
-                v-for="item in items"
-                :key="item"
-                :active="props.modelValue == item"
-                class="my-2"
-                style="width: 100%"
-                :weight="props.modelValue == item ? 'bold' : 'normal'"
-                @click="emits('update:modelValue', item)"
-              >
-                {{ item }}
-              </custom-btn>
-
-              <div
-                v-intersect="(isInterSecting) => (bottom = isInterSecting)"
-                style="height: 1px"
-              ></div>
+            <div ref="list" class="dropdown-list">
+              <div ref="listInner">
+                <custom-btn
+                  v-for="item in items"
+                  :key="item"
+                  :active="selectedItem == item"
+                  class="my-2"
+                  style="width: 100%"
+                  :weight="selectedItem == item ? 'bold' : 'normal'"
+                  @click="
+                    selectedItem = item;
+                    dropdownState = false;
+                  "
+                >
+                  {{ item[props.itemTitle] ?? item }}
+                </custom-btn>
+                <div
+                  v-if="!props.items?.length"
+                  class="my-2"
+                  style="height: 24px"
+                ></div>
+              </div>
             </div>
 
             <v-expand-transition>
-              <div v-if="!bottom" class="more-icon">
+              <div v-if="overflows && !bottom" class="more-icon">
                 <v-icon icon="mdi-chevron-down" size="14"> </v-icon>
               </div>
             </v-expand-transition>
@@ -89,7 +91,7 @@
       <div style="position: relative">
         <transition name="expand-x">
           <v-sheet
-            v-if="dropdownOpened"
+            v-if="dropdownState"
             class="underline"
             :color="activeColor"
             height="2"
@@ -114,26 +116,87 @@
 import CustomBtn from "./CustomBtn.vue";
 
 import { ref, computed, defineProps, defineEmits } from "vue";
+import { vElementHover } from "@vueuse/components";
+import {
+  useScroll,
+  useElementSize,
+  toRefs,
+  until,
+  refWithControl,
+} from "@vueuse/core";
+import { createToggle } from "@/modules/utility";
 import { themes } from "@/plugins/vuetify.config";
+import { watchEffect } from "vue";
 
+// Components
+const list = ref();
+const listInner = ref();
+
+// Data
 const activeColor = computed(
   () => themes.customTheme.colors[props.activeColor] ?? props.activeColor
 );
+const { value: isHover, toggle: toggleHover } = createToggle(false);
+const dropdownState = refWithControl(false, {
+  onChanged: (value) => emits("update:dropdownState", value),
+});
+const selectedItem = refWithControl(null, {
+  onChanged: (value) => {
+    if (!value) return;
+    emits("update:modelValue", value[props.itemValue] ?? value);
+    emits("update:selectedItem", value);
+  },
+});
+const { height } = useElementSize(list);
+const { height: innerHeight } = useElementSize(listInner);
+const overflows = computed(() => {
+  if (!height.value) return false;
+  return innerHeight.value > height.value;
+});
+const { y, arrivedState } = useScroll(list);
+const { top, bottom } = toRefs(arrivedState);
 
-const isHover = ref(false);
-const dropdownOpened = ref(false);
-const top = ref(true);
-const bottom = ref(false);
-
+// Props & Emits
 const props = defineProps({
   items: Array,
-  modelValue: Number,
+  modelValue: {
+    Type: Number | String,
+    default: null,
+  },
+
   activeColor: {
     Type: String,
     default: "primary",
   },
+  itemTitle: {
+    Type: String,
+    default: "title",
+  },
+  itemValue: {
+    Type: String,
+    default: "value",
+  },
 });
-const emits = defineEmits(["update:modelValue", "update:dropdownState"]);
+const emits = defineEmits([
+  "update:modelValue",
+  "update:dropdownState",
+  "update:selectedItem",
+]);
+
+// Watch
+watchEffect(() => {
+  selectedItem.value = props.items.find((item) => {
+    return props.modelValue == (item[props.itemValue] ?? item);
+  });
+});
+
+// Methods
+const scrollToSelected = async () => {
+  // Wait until list is rendered
+  await until(height).toBeTruthy();
+  y.value =
+    8 + 32 * props.items?.indexOf(selectedItem.value) - (height.value / 2 - 12);
+};
 </script>
 
 <style scoped>
@@ -170,7 +233,7 @@ const emits = defineEmits(["update:modelValue", "update:dropdownState"]);
   margin: 0 auto 0 auto;
 }
 .dropdown-wrapper {
-  overflow-y: hide;
+  padding: 0 1em 0 1em;
 }
 ::-webkit-scrollbar {
   display: none;

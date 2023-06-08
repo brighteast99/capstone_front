@@ -7,12 +7,18 @@
 
       <custom-btn
         class="announce-title-btn"
-        :to="{
-          name: pages.ViewPost,
-          params: { boardId: 'announcements', postId: currentAnnounce?.postId },
-        }"
+        :to="
+          currentAnnounce?.id
+            ? {
+                name: pages.ViewThread,
+                params: {
+                  boardId: 5,
+                  threadId: currentAnnounce?.id,
+                },
+              }
+            : false
+        "
       >
-        <!-- {{ currentAnnounce?.title }} -->
         <v-scroll-y-reverse-transition leave-absolute>
           <p v-if="transition" class="announce-title">
             {{ currentAnnounce?.title }}
@@ -24,7 +30,12 @@
       </custom-btn>
 
       <v-spacer></v-spacer>
-      <custom-btn size="small"> 모든 공지 보기 </custom-btn>
+      <custom-btn
+        size="small"
+        :to="{ name: pages.ThreadList, params: { boardId: 5 } }"
+      >
+        모든 공지 보기
+      </custom-btn>
     </div>
   </v-card>
 </template>
@@ -32,36 +43,60 @@
 <script setup>
 import CustomBtn from "./CustomBtn.vue";
 
-import { ref, computed, reactive, onBeforeMount, onBeforeUnmount } from "vue";
+import { reactive, onBeforeMount, onBeforeUnmount, watchEffect } from "vue";
+import { useCycleList, useIntervalFn } from "@vueuse/core";
 import { pages } from "@/router";
-import { useDevelopStore } from "@/store";
+import { createToggle } from "@/modules/utility";
+import { API, apiRequest, parseResponse } from "@/modules/Services/API";
 
 // Pinia storage
-const developStore = useDevelopStore();
 
 // Data
-const current = ref(0);
-const currentAnnounce = computed(() => announcements[current.value]);
 const announcements = reactive([]);
-let timer;
+const { state: currentAnnounce, next: nextAnnounce } =
+  useCycleList(announcements);
+const { value: transition, toggle } = createToggle(true);
 const CYCLE_INTERVAL = 5000;
-const transition = ref(true);
+const { pause, resume, isActive } = useIntervalFn(
+  () => {
+    nextAnnounce();
+    toggle();
+  },
+  CYCLE_INTERVAL,
+  { immediate: false }
+);
 
+// Hooks
 onBeforeMount(() => {
-  /**
-   * TODO 서버에서 공지 받아오기
-   */
-  announcements.push(...developStore.announcements);
-
-  timer = setInterval(move, CYCLE_INTERVAL);
+  new apiRequest()
+    .execute(
+      API.GetBoard,
+      { id: 5 },
+      { thread_set: ["id", "title", "is_deleted"] }
+    )
+    .then(parseResponse)
+    .then((response) => {
+      announcements.push(
+        ...response[API.GetBoard].thread_set.filter(
+          (thread) => !thread.is_deleted
+        )
+      );
+    })
+    .catch(() =>
+      announcements.push({
+        id: null,
+        title: "오류가 발생했습니다",
+      })
+    )
+    .finally(nextAnnounce);
 });
-onBeforeUnmount(() => clearInterval(timer));
+onBeforeUnmount(pause);
 
-// Methods
-const move = (amount = 1) => {
-  current.value = (current.value + amount) % announcements.length;
-  transition.value = !transition.value;
-};
+// Watch
+watchEffect(() => {
+  if (announcements.length && !isActive.value) resume();
+  if (!announcements.length && isActive.value) pause();
+});
 </script>
 
 <style scoped>

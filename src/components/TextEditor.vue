@@ -97,9 +97,10 @@
           ></v-sheet>
         </div>
 
-        <v-menu activator="parent" @update:model-value="menuMVs.Color = $event">
+        <v-menu activator="parent">
           <v-color-picker
             v-model="fontColor"
+            class="px-0"
             mode="hex"
             hide-canvas
             hide-sliders
@@ -129,10 +130,7 @@
           ></v-sheet>
         </div>
 
-        <v-menu
-          activator="parent"
-          @update:model-value="menuMVs.Highlight = $event"
-        >
+        <v-menu activator="parent">
           <v-color-picker
             v-model="highlightColor"
             mode="hex"
@@ -276,10 +274,10 @@
       </custom-btn>
 
       <!-- Image -->
-      <custom-btn
+      <!-- <custom-btn
         class="image-included"
-        @mouseenter="setTimer(0)"
-        @mouseleave="clearTimer(0)"
+        @mouseenter="openImageForm"
+        @mouseleave="cancelOpenImageForm"
       >
         <div class="wysiwyg-stacked-icon">
           <div class="wysiwyg-icon-area">
@@ -368,13 +366,13 @@
             </v-form>
           </v-card>
         </v-menu>
-      </custom-btn>
+      </custom-btn> -->
 
       <!-- Link -->
       <custom-btn
         class="link-included"
-        @mouseenter="setTimer(1)"
-        @mouseleave="clearTimer(1)"
+        @mouseenter="openLinkForm"
+        @mouseleave="cancelOpenLinkForm"
       >
         <div class="wysiwyg-stacked-icon">
           <div class="wysiwyg-icon-area">
@@ -488,8 +486,9 @@ import { Highlight } from "@tiptap/extension-highlight";
 import { TextAlign } from "@tiptap/extension-text-align";
 import { Image } from "@tiptap/extension-image";
 import Link from "@tiptap/extension-link";
+import { useTimeoutFn } from "@vueuse/core";
 
-import { useTextEditor } from "@/store";
+// import { useTextEditor } from "@/store";
 
 // Styles
 const MENU_OPEN_DELAY = 50;
@@ -529,11 +528,11 @@ const swatches = [
 ];
 
 // Components
-const imageForm = ref(null);
-const linkForm = ref(null);
+const imageForm = ref();
+const linkForm = ref();
 
 // Pinia storage
-const store = useTextEditor();
+// const store = useTextEditor();
 
 // Data
 const editor = useEditor({
@@ -618,27 +617,25 @@ const listIcon = computed(() =>
     : "mdi-format-list-bulleted"
 );
 
-const imageFormData = reactive({
-  sourceIsURL: true,
-  url: "",
-  file: [],
-  rules: [
-    (v) => {
-      if (imageFormData.sourceIsURL || !v) return true;
-      for (const file of v)
-        if (file.size > 3 * 1024 * 1024)
-          return "3MB 이하 이미지만 첨부 가능합니다.";
-      return true;
-    },
-  ],
-});
+// const imageFormData = reactive({
+//   sourceIsURL: true,
+//   url: "",
+//   file: [],
+//   rules: [
+//     (v) => {
+//       if (imageFormData.sourceIsURL || !v) return true;
+//       for (const file of v)
+//         if (file.size > 3 * 1024 * 1024)
+//           return "3MB 이하 이미지만 첨부 가능합니다.";
+//       return true;
+//     },
+//   ],
+// });
 const linkFormData = reactive({
   specifyName: false,
   url: "",
   name: "",
 });
-
-const timers = reactive({ image: null, link: null });
 const menuMVs = reactive({
   FontSize: false,
   Color: false,
@@ -648,13 +645,13 @@ const menuMVs = reactive({
   Image: false,
   Link: false,
 });
-const floatMenu = computed(() =>
-  Object.values(menuMVs).reduce((accum, value) => accum | value, false)
-);
+const floatMenu = computed(() => Object.values(menuMVs).some((value) => value));
 
 // Props & Emits
 const props = defineProps({
-  modelValue: Object,
+  modelValue: {
+    Type: Object | String,
+  },
   editMode: Boolean,
 });
 const emit = defineEmits(["update:modelValue"]);
@@ -700,42 +697,48 @@ onUnmounted(() => {
 });
 
 // Methods
-const setTimer = (timer) => {
-  if (timer == 0)
-    timers.image = setTimeout(() => (menuMVs.Image = true), MENU_OPEN_DELAY);
-  else timers.link = setTimeout(() => (menuMVs.Link = true), MENU_OPEN_DELAY);
-};
-const clearTimer = (timer) => {
-  clearTimeout(timer == 0 ? timers.image : timers.link);
-};
-const imageInclude = () => {
-  return [document.querySelector(".image-included")];
-};
+// const { start: openImageForm, stop: cancelOpenImageForm } = useTimeoutFn(
+//   () => {
+//     menuMVs.Image = true;
+//   },
+//   MENU_OPEN_DELAY,
+//   { immediate: false }
+// );
+const { start: openLinkForm, stop: cancelOpenLinkForm } = useTimeoutFn(
+  () => {
+    menuMVs.Link = true;
+  },
+  MENU_OPEN_DELAY,
+  { immediate: false }
+);
+// const imageInclude = () => {
+//   return [document.querySelector(".image-included")];
+// };
 const linkInclude = () => {
   return [document.querySelector(".link-included")];
 };
 
-const insertImage = async () => {
-  let url;
+// const insertImage = async () => {
+//   let url;
 
-  if (imageFormData.sourceIsURL) {
-    if (!imageFormData.url?.trim()) {
-      menuMVs.Image = false;
-      return;
-    }
-    url = imageFormData.url.trim();
-  } else {
-    const valid = (await imageForm.value?.validate()).valid;
-    if (!valid) {
-      menuMVs.Image = false;
-      return;
-    }
-    url = store.register(imageFormData.file[0]);
-  }
+//   if (imageFormData.sourceIsURL) {
+//     if (!imageFormData.url?.trim()) {
+//       menuMVs.Image = false;
+//       return;
+//     }
+//     url = imageFormData.url.trim();
+//   } else {
+//     const valid = (await imageForm.value?.validate()).valid;
+//     if (!valid) {
+//       menuMVs.Image = false;
+//       return;
+//     }
+//     url = store.register(imageFormData.file[0]);
+//   }
 
-  editor.value?.commands.setImage({ src: url });
-  menuMVs.Image = false;
-};
+//   editor.value?.commands.setImage({ src: url });
+//   menuMVs.Image = false;
+// };
 const insertLink = () => {
   const url = linkFormData.url;
   if (!url?.trim()) {
@@ -779,6 +782,9 @@ const insertLink = () => {
   outline: 0px solid transparent;
   padding: 16px;
 
+  span {
+    line-height: 130%;
+  }
   ul,
   ol {
     padding-left: 1.5em;

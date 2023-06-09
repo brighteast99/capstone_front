@@ -293,7 +293,7 @@ onBeforeMount(() => {
       bookmarks.value = 0;
       // if (bookmarks.state.value) bookmarks.value -= 1;
 
-      systemStore.readThread(props.threadId);
+      if (systemStore.readThread(props.threadId)) views.value += 1;
     })
     .catch(() => router.replace({ name: pages.ServerError }));
 

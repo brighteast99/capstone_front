@@ -34,15 +34,7 @@
         <p style="font-size: 24px">아직 등록된 글이 없습니다.</p>
       </div>
       <div v-else v-for="thread in threads" :key="thread">
-        <thread-peeker
-          :thread="thread"
-          @click="
-            router.push({
-              name: pages.ViewThread,
-              params: { boardId: props.boardId, threadId: thread?.id },
-            })
-          "
-        ></thread-peeker>
+        <thread-peeker :thread="thread"></thread-peeker>
         <v-divider class="mx-1 my-1"></v-divider>
       </div>
     </v-card-text>

@@ -1,7 +1,21 @@
 <template>
-  <v-card class="area rounded-0 pa-1" elevation="0">
+  <v-card
+    class="area rounded-0 pa-1"
+    elevation="0"
+    @click="
+      router.push({
+        name: pages.ViewThread,
+        params: { threadId: props.thread?.id },
+      })
+    "
+  >
     <v-card-title>
-      <writer-info :writer="props.thread.user" :date="date" :small="true">
+      <writer-info
+        :writer="props.thread.user"
+        :date="date"
+        :small="true"
+        @click.stop
+      >
       </writer-info>
     </v-card-title>
 
@@ -45,6 +59,7 @@ import {
   extractText,
   formatDateRelative,
 } from "@/modules/utility";
+import router, { pages } from "@/router";
 
 const date = computed(() =>
   formatDateRelative(props.thread.date_created, { max_unit: "days" })

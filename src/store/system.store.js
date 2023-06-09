@@ -61,7 +61,7 @@ export const useSystemStore = defineStore(
     };
 
     const readThread = (threadId) => {
-      if (readThreads.value.find((x) => x.id == threadId)) return;
+      if (readThreads.value.find((x) => x.id == threadId)) return false;
 
       new apiRequest()
         .execute(API.ReadThread, { id: Number(threadId) })
@@ -72,6 +72,7 @@ export const useSystemStore = defineStore(
           readThreads.value.push({ id: threadId, timestamp: new Date() });
           if (cleanupTimer == null) startHistoryCleanup();
         });
+      return true;
     };
 
     /**

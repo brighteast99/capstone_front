@@ -195,7 +195,7 @@
                       `/boards/${board.id}/threads`
                     "
                     class="mb-1"
-                    color="primary_accent"
+                    color="primary_lighter"
                     default-color="white"
                     :to="{
                       name: pages.ThreadList,

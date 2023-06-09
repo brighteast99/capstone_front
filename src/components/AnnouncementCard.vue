@@ -21,10 +21,10 @@
       >
         <v-scroll-y-reverse-transition leave-absolute>
           <p v-if="transition" class="announce-title">
-            {{ currentAnnounce?.title }}
+            {{ transition ? currentAnnounce?.title : getPrev() }}
           </p>
           <p v-else class="announce-title">
-            {{ currentAnnounce?.title }}
+            {{ transition ? getPrev() : currentAnnounce?.title }}
           </p>
         </v-scroll-y-reverse-transition>
       </custom-btn>
@@ -53,10 +53,13 @@ import { API, apiRequest, parseResponse } from "@/modules/Services/API";
 
 // Data
 const announcements = reactive([]);
-const { state: currentAnnounce, next: nextAnnounce } =
-  useCycleList(announcements);
+const {
+  state: currentAnnounce,
+  next: nextAnnounce,
+  index,
+} = useCycleList(announcements);
 const { value: transition, toggle } = createToggle(true);
-const CYCLE_INTERVAL = 5000;
+const CYCLE_INTERVAL = 1000;
 const { pause, resume, isActive } = useIntervalFn(
   () => {
     nextAnnounce();
@@ -72,7 +75,7 @@ onBeforeMount(() => {
     .execute(
       API.GetBoard,
       { id: 5 },
-      { thread_set: ["id", "title", "is_deleted"] }
+      { thread_set: ["id", "title", "is_deleted", "date_created"] }
     )
     .then(parseResponse)
     .then((response) => {
@@ -88,19 +91,25 @@ onBeforeMount(() => {
         title: "오류가 발생했습니다",
       })
     )
-    .finally(nextAnnounce);
+    .finally(() => (index.value = 0));
 });
 onBeforeUnmount(pause);
 
 // Watch
 watchEffect(() => {
-  if (announcements.length && !isActive.value) resume();
-  if (!announcements.length && isActive.value) pause();
+  if (announcements.length > 1 && !isActive.value) resume();
+  if (announcements.length <= 1 && isActive.value) pause();
 });
+
+// Methods
+const getPrev = () => {
+  return announcements[(index - 1) % announcements.length];
+};
 </script>
 
 <style scoped>
 .area {
+  position: relative;
   display: flex;
   flex-direction: row;
   align-items: center;
@@ -108,6 +117,7 @@ watchEffect(() => {
 }
 
 .announce-title-btn {
+  width: 100%;
   flex-shrink: 1;
   min-width: 0;
 }
@@ -115,8 +125,9 @@ watchEffect(() => {
 .announce-title {
   display: block;
   width: 100%;
-  text-overflow: ellipsis;
+  min-width: unset;
   white-space: nowrap;
+  text-overflow: ellipsis;
   overflow: hidden;
   text-align: left;
 }

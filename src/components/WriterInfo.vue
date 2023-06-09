@@ -17,9 +17,10 @@
       :class="props.small ? 'info-small' : 'info-normal'"
     >
       <custom-btn
-        class="pr-0"
+        class="pr-0 pl-2"
         :size="props.small ? 14 : 'medium'"
-        weight="bold"
+        :weight="500"
+        default-color="black"
         :to="routeTo"
       >
         {{ props.writer?.name }}

@@ -118,7 +118,6 @@ const routes = [
                     to.params.boardId = exactBoardId;
                     return next({
                       ...to,
-                      replace: true,
                     });
                   }
 
@@ -179,7 +178,6 @@ const routes = [
                     to.params.boardId = exactBoardId;
                     return next({
                       ...to,
-                      replace: true,
                     });
                   }
 

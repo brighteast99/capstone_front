@@ -70,6 +70,7 @@ export const useSystemStore = defineStore(
           if (!response[API.ReadThread]) throw new Error();
 
           readThreads.value.push({ id: threadId, timestamp: new Date() });
+
           if (cleanupTimer == null) startHistoryCleanup();
         });
       return true;
@@ -79,18 +80,23 @@ export const useSystemStore = defineStore(
      * Remove read history older than 1 hour
      */
     const startHistoryCleanup = () => {
+      if (!readThreads.value.length) {
+        cleanupTimer = null;
+        return;
+      }
+
+      const THRESHOLD = 1000 * 60 * 60;
+
       while (
-        new Date() -
-          new Date(readThreads.value[readThreads.value.length - 1]?.timestamp) >
-        1000 * 60 * 60
+        readThreads.value.length &&
+        Date.now() - new Date(readThreads.value[0]?.timestamp) > THRESHOLD
       )
-        readThreads.value.pop();
+        readThreads.value.shift();
 
       if (readThreads.value.length)
         cleanupTimer = setTimeout(
           startHistoryCleanup,
-          new Date() -
-            new Date(readThreads.value[readThreads.value.length - 1].timestamp)
+          new Date(readThreads.value[0].timestamp) - Date.now() + THRESHOLD
         );
       else cleanupTimer = null;
     };

@@ -32,6 +32,7 @@ const displayTopNavbar = computed(
 
 onMounted(() => {
   systemStore.verify();
+  systemStore.startHistoryCleanup();
 });
 </script>
 

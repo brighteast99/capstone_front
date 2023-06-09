@@ -13,7 +13,7 @@ const API = {
   SearchUserForPW: "search_user_for_password",
   ModifyPassword: "modify_user_password",
   GetUser: "user",
-  GetBookmarks: "my_favorite_thread",
+  GetFavorites: "my_favorite_thread",
   GetUsers: "users",
   EditUser: "edit_user",
   GetBoards: "boards",

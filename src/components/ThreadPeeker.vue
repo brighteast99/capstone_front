@@ -1,12 +1,18 @@
 <template>
   <v-card
-    class="area rounded-0 pa-1"
+    class="rounded-0 pa-1 card"
+    :class="{ disabled: is_deleted }"
     elevation="0"
+    :disabled="is_deleted"
     @click="
-      router.push({
-        name: pages.ViewThread,
-        params: { threadId: props.thread?.id },
-      })
+      if (!is_deleted)
+        router.push({
+          name: pages.ViewThread,
+          params: {
+            boardId: props.thread?.board?.id,
+            threadId: props.thread?.id,
+          },
+        });
     "
   >
     <v-card-title>
@@ -14,21 +20,31 @@
         :writer="props.thread.user"
         :date="date"
         :small="true"
+        :disabled="props.thread.is_deleted"
         @click.stop
       >
       </writer-info>
     </v-card-title>
 
     <v-card-text class="pt-2">
-      <p class="title">
-        {{ props.thread.title }}
-      </p>
-      <p class="content">
-        {{ content }}
-      </p>
+      <div
+        v-if="props.thread.is_deleted"
+        class="d-flex flex-column justify-center text-center text-disabled"
+        style="height: 50px; font-size: 1.3em; background-color: #fafafa"
+      >
+        삭제된 게시글입니다
+      </div>
+      <div v-else>
+        <p class="title">
+          {{ props.thread.title }}
+        </p>
+        <p class="content">
+          {{ content }}
+        </p>
+      </div>
     </v-card-text>
 
-    <v-card-actions class="actiondata-area">
+    <v-card-actions v-if="!props.thread.is_deleted" class="actiondata-area">
       <div class="d-flex align-center">
         <v-icon icon="mdi-eye"></v-icon>
         <span>&nbsp;{{ props.thread.views }}</span>
@@ -61,6 +77,7 @@ import {
 } from "@/modules/utility";
 import router, { pages } from "@/router";
 
+const is_deleted = computed(() => props.thread.is_deleted);
 const date = computed(() =>
   formatDateRelative(props.thread.date_created, { max_unit: "days" })
 );
@@ -78,10 +95,12 @@ const props = defineProps({
   thread: {
     Type: {
       id: Number | String,
+      board: { id: Number | String },
       user: {
         id: Number | String,
         name: String,
       },
+      is_deleted: Boolean,
       title: String,
       content: String,
       date_created: Date | String,
@@ -105,18 +124,10 @@ const props = defineProps({
 </script>
 
 <style scoped>
-.area {
-  transition: all 0.2s;
-}
-.area:hover {
-  background-color: #f5f5f5;
-}
-
-.area:active {
+.card:active:not(.disabled) {
   transition: all 0s;
   background-color: #f0f0f0;
 }
-
 .title {
   font-weight: 600;
   font-size: 1.4em;

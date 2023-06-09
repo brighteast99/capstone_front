@@ -1,16 +1,16 @@
 <template>
   <v-app>
     <!-- Header -->
-    <top-navbar v-show="displayTopNavbar"></top-navbar>
+    <top-navbar v-show="!hideTopNavbar"></top-navbar>
     <!-- Main -->
     <v-main
       :style="{
-        marginTop: (displayTopNavbar ? '72' : '0') + 'px',
+        marginTop: (hideTopNavbar ? '0' : '72') + 'px',
         position: 'relative',
       }"
     >
       <v-container class="pa-0" fluid style="max-width: 1024px">
-        <router-view :key="$route.fullPath"> </router-view>
+        <router-view> </router-view>
       </v-container>
     </v-main>
   </v-app>
@@ -26,8 +26,8 @@ import { useSystemStore } from "./store";
 const systemStore = useSystemStore();
 
 // Data
-const displayTopNavbar = computed(
-  () => router.currentRoute.value.meta.useTopNavbar
+const hideTopNavbar = computed(
+  () => router.currentRoute.value.meta.hideTopNavbar
 );
 
 onMounted(() => {

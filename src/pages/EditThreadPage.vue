@@ -59,7 +59,7 @@ import {
   onBeforeUnmount,
 } from "vue";
 import { onBeforeRouteLeave, onBeforeRouteUpdate } from "vue-router";
-import router, { pages } from "@/router";
+import router, { pages, safeBack } from "@/router";
 import { useSystemStore, useModalStore } from "@/store";
 import {
   modalPresets,
@@ -78,11 +78,9 @@ const modalStore = useModalStore();
 // Data
 let intendedLeaving = false;
 const isNewThread = computed(() => router.currentRoute.value.meta.newThread);
-const isEdited = computed(() => {
-  console.log(JSON.stringify(threadData));
-  console.log(JSON.stringify(threadData_backup));
-  return JSON.stringify(threadData_backup) !== JSON.stringify(threadData);
-});
+const isEdited = computed(
+  () => JSON.stringify(threadData_backup) !== JSON.stringify(threadData)
+);
 const canLeave = computed(() => !systemStore.loggedIn || !isEdited.value);
 const boardList = reactive([]);
 const threadData = reactive({
@@ -100,40 +98,20 @@ const props = defineProps({
 });
 
 // Fetch data before route enter
-onBeforeMount(() => {
-  const api = new apiRequest();
+onBeforeMount(async () => {
+  if (!systemStore.loggedIn) {
+    const response = await modalStore.showNeedLoginMessage();
 
-  api.push(API.GetBoards, null, ["id", "title", "board_type"]);
-  if (!isNewThread.value) {
-    api.push(API.GetThread, { id: Number(props.threadId) }, [
-      "title",
-      "content",
-      "occupation",
-    ]);
+    intendedLeaving = true;
+    if (response === "Login")
+      return router.push({
+        name: pages.Login,
+        query: { redirect: router.currentRoute.value.fullPath },
+      });
+    return safeBack();
   }
 
-  api
-    .send()
-    .then(parseResponse)
-    .then((response) => {
-      const boards = response[API.GetBoards];
-      if (systemStore.currentUser.is_staff) boardList.push(...boards);
-      else
-        boardList.push(
-          ...boards.filter((board) => board.board_type != "SPECIAL")
-        );
-
-      const loadedThread = response[API.GetThread];
-      threadData.board = props.boardId;
-      if (loadedThread) {
-        loadedThread.occupation = loadedThread.occupation.split(", ");
-        loadedThread.content = parseJSON(loadedThread.content);
-
-        Object.assign(threadData, loadedThread);
-      }
-      threadData_backup = Object.assign({}, threadData);
-    })
-    .catch(() => router.replace({ name: pages.ServerError }));
+  fetchData();
 
   window.addEventListener("beforeunload", beforeunloadEvent);
   // window.addEventListener("unload", unloadEvent);
@@ -145,7 +123,7 @@ onBeforeUnmount(() => {
   // window.removeEventListener("unload", unloadEvent);
 });
 onBeforeRouteLeave(async (to, from, next) => {
-  if (intendedLeaving || canLeave.value) return next();
+  if (intendedLeaving || canLeave.value) return next(true);
 
   const response = await modalStore.openModal(
     `페이지를 벗어나시겠습니까?\n${
@@ -167,7 +145,7 @@ onBeforeRouteLeave(async (to, from, next) => {
   return next(response === modalResponses.Yes);
 });
 onBeforeRouteUpdate(async (to, from, next) => {
-  if (intendedLeaving || canLeave.value) return true;
+  if (intendedLeaving || canLeave.value) return next(true);
 
   const response = await modalStore.openModal(
     `페이지를 새로고침하시겠습니까?\n${
@@ -190,6 +168,105 @@ onBeforeRouteUpdate(async (to, from, next) => {
 });
 
 // Methods
+const fetchData = () => {
+  const api = new apiRequest();
+
+  api.push(API.GetBoards, null, ["id", "title", "board_type"]);
+
+  if (isNewThread.value)
+    api.push(API.GetBoard, { id: Number(props.boardId) }, "board_type");
+  else
+    api.push(API.GetThread, { id: Number(props.threadId) }, [
+      { user: "id" },
+      { board: "id" },
+      "is_deleted",
+      "title",
+      "content",
+      "occupation",
+    ]);
+
+  api
+    .send()
+    .then(parseResponse)
+    .then((response) => {
+      const boards = response[API.GetBoards];
+      if (!boards) throw new Error();
+      if (systemStore.currentUser.is_staff) boardList.push(...boards);
+      else
+        boardList.push(
+          ...boards.filter((board) => board.board_type != "SPECIAL")
+        );
+
+      if (isNewThread.value) {
+        const boardData = response[API.GetBoard];
+        if (!boardData) throw "noSuchBoard";
+        if (
+          boardData.board_type == "SPECIAL" &&
+          !systemStore.currentUser.is_staff
+        )
+          throw "noPermission";
+        threadData.board = props.boardId;
+      } else {
+        const loadedThread = response[API.GetThread];
+        if (!loadedThread || loadedThread.is_deleted) throw "noSuchThread";
+        if (loadedThread.board.id != props.boardId)
+          router.replace({
+            name: pages.EditThread,
+            params: {
+              boardId: loadedThread.board.id,
+              threadId: props.threadId,
+            },
+          });
+
+        if (loadedThread.user.id != systemStore.currentUser.id)
+          throw "noPermission";
+
+        loadedThread.board = loadedThread.board.id;
+        loadedThread.occupation = loadedThread.occupation.split(", ");
+        loadedThread.content = parseJSON(loadedThread.content);
+        Object.assign(threadData, loadedThread);
+      }
+      threadData_backup = Object.assign({}, threadData);
+    })
+    .catch((err) => {
+      intendedLeaving = true;
+      switch (err) {
+        case "noSuchBoard":
+          return modalStore
+            .openModal("존재하지 않는 게시판입니다.", null, {
+              actions: modalPresets.OK,
+            })
+            .then(safeBack);
+        case "noSuchThread":
+          return modalStore
+            .openModal("존재하지 않는 게시글입니다.", null, {
+              actions: modalPresets.OK,
+            })
+            .then(safeBack);
+        case "noPermission":
+          return modalStore.showNoPermissionMessage().then(() =>
+            safeBack({
+              defaultRoute: isNewThread.value
+                ? {
+                    name: pages.ThreadList,
+                    params: { boardId: props.boardId },
+                    replace: true,
+                  }
+                : {
+                    name: pages.ViewThread,
+                    params: {
+                      boardId: props.boardId,
+                      threadId: props.threadId,
+                    },
+                    replace: true,
+                  },
+            })
+          );
+        default:
+          return modalStore.showErrorMessage().then(safeBack);
+      }
+    });
+};
 const cancel = async () => {
   if (!canLeave.value) {
     const operation = isNewThread.value ? "작성" : "수정";

@@ -61,7 +61,6 @@ export function constructQueryString(name, args, fields) {
     queryString += `{${parseFields(fields)}}`;
   }
 
-  console.log(queryString);
   return queryString;
 }
 

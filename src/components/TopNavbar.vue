@@ -140,6 +140,7 @@
                       :to="{
                         name: item.routeName,
                         params: { userId: currentUser.id },
+                        query: item.query,
                       }"
                       :active="false"
                     >
@@ -300,13 +301,15 @@ const items = [
       title: "작성글 목록",
       value: 2,
       appendIcon: "mdi-playlist-edit",
-      routeName: pages.UserThreads,
+      routeName: pages.UserInfo,
+      query: { tab: "recruits" },
     },
     {
       title: "관심글 목록",
       value: 3,
       appendIcon: "mdi-playlist-star",
-      routeName: pages.UserBookmarks,
+      routeName: pages.UserInfo,
+      query: { tab: "favorites" },
     },
   ],
 ];

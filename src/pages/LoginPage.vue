@@ -161,10 +161,13 @@ const login = () => {
     .then(({ data: response }) => {
       if (!response.value.data[API.SignIn]) loginFailed();
       else {
-        systemStore.login(
-          Object.assign({}, loginData, response.value.data[API.SignIn])
+        systemStore.login({ ...loginData, ...response.value.data[API.SignIn] });
+        router.push(
+          router.currentRoute.value.query.redirect ?? {
+            name: pages.Main,
+            replace: true,
+          }
         );
-        router.push({ name: pages.Main, replace: true });
       }
     })
     .catch(modalStore.showErrorMessage)

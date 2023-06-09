@@ -62,7 +62,6 @@ const { activate, deactivate } = useFocusTrap(actions, { immediate: true });
 
 // Hook
 onBeforeUnmount(() => {
-  console.log("beforeUnmount");
   deactivate();
 });
 

@@ -26,37 +26,22 @@
         :views="views"
       ></writer-info>
 
-      <custom-btn
-        v-if="isUsersThread || currentUser.is_staff"
-        class="actions-btn"
-        size="small"
-      >
-        <v-icon icon="mdi-dots-vertical"> </v-icon>
-
-        <v-menu
-          activator="parent"
-          location="right"
-          :open-on-hover="false"
-          open-on-click
+      <dot-menu v-if="isUsersThread || currentUser.is_staff">
+        <custom-btn
+          class="mb-1"
+          @click="
+            router.push({
+              name: pages.EditThread,
+              params: router.currentRoute.value.params,
+            })
+          "
         >
-          <v-sheet class="px-5 py-3">
-            <custom-btn
-              class="mb-1"
-              @click="
-                router.push({
-                  name: pages.EditThread,
-                  params: router.currentRoute.value.params,
-                })
-              "
-            >
-              게시글 수정
-            </custom-btn>
-            <custom-btn color="error" @click="deleteThread">
-              게시글 삭제
-            </custom-btn>
-          </v-sheet>
-        </v-menu>
-      </custom-btn>
+          게시글 수정
+        </custom-btn>
+        <custom-btn color="error" @click="deleteThread">
+          게시글 삭제
+        </custom-btn>
+      </dot-menu>
     </v-card-title>
 
     <v-card-text class="py-0 px-3">
@@ -88,21 +73,21 @@
       </custom-btn>
       <custom-btn
         color="warning"
-        :active="loggedIn && bookmarks.state?.value"
-        @click="toggleBookmark"
+        :active="loggedIn && favorites.state?.value"
+        @click="toggleFavorite"
       >
         <v-icon icon="mdi-star"></v-icon>
         <template v-slot:append>
           <div class="d-flex">
             <span class="thread-action-counter ml-1">관심</span>
             <v-slide-y-reverse-transition hide-on-leave>
-              <p v-if="bookmarks.state?.value" class="thread-action-counter">
-                {{ bookmarks.value + bookmarks.state?.value }}
+              <p v-if="favorites.state?.value" class="thread-action-counter">
+                {{ favorites.value + favorites.state?.value }}
               </p>
             </v-slide-y-reverse-transition>
             <v-slide-y-transition hide-on-leave>
-              <p v-if="!bookmarks.state?.value" class="thread-action-counter">
-                {{ bookmarks.value }}
+              <p v-if="!favorites.state?.value" class="thread-action-counter">
+                {{ favorites.value }}
               </p>
             </v-slide-y-transition>
           </div>
@@ -130,14 +115,14 @@
       <v-divider class="my-3"></v-divider>
 
       <div
-        v-if="commentState.isLoading"
+        v-if="isLoading"
         class="d-flex flex-column text-h6 justify-center align-center text-disabled"
         style="height: 150px"
       >
         <v-icon class="mdi-spin" icon="mdi-loading" size="50"> </v-icon>
       </div>
       <div
-        v-else-if="commentState.error"
+        v-else-if="error"
         class="d-flex align-center justify-center text-h6 text-center text-disabled"
         style="height: 150px"
       >
@@ -193,7 +178,7 @@ import {
   modalResponses,
   modalActions,
 } from "@/store/modal.store";
-import { API, apiRequest, parseResponse } from "@/modules/Services/API";
+import { API, apiRequest, parseResponse, useAPI } from "@/modules/Services/API";
 import {
   countActiveComments,
   createToggle,
@@ -202,6 +187,8 @@ import {
 } from "@/modules/utility";
 import { useDebounceFn } from "@vueuse/core";
 import { storeToRefs } from "pinia";
+import { constructQuery } from "@/modules/Services/queryBuilder";
+import DotMenu from "@/components/DotMenu.vue";
 
 // Pinia storage
 const systemStore = useSystemStore();
@@ -225,14 +212,9 @@ const likes = reactive({
   state: null,
   value: null,
 });
-const bookmarks = reactive({
+const favorites = reactive({
   state: null,
   value: null,
-});
-
-const commentState = reactive({
-  isLoading: true,
-  error: false,
 });
 const comments = reactive([]);
 const comments_count = computed(() => countActiveComments(comments));
@@ -244,10 +226,9 @@ const props = defineProps({
 });
 
 // Hooks
+const { isLoading, error, execute: fetchComments } = useAPI();
 onBeforeMount(() => {
-  const api = new apiRequest();
-
-  api
+  new apiRequest()
     .push(API.GetThread, { id: Number(props.threadId) }, [
       { user: ["id", "name"] },
       { board: "title" },
@@ -288,46 +269,46 @@ onBeforeMount(() => {
       likes.state = createToggle(actions?.is_like ?? false);
       likes.value = threadData.likes;
       if (likes.state.value) likes.value -= 1;
-      bookmarks.state = createToggle(actions?.is_favorite ?? false);
+      favorites.state = createToggle(actions?.is_favorite ?? false);
       // TODO
-      bookmarks.value = 0;
-      // if (bookmarks.state.value) bookmarks.value -= 1;
+      favorites.value = 0;
+      // if (favorites.state.value) favorites.value -= 1;
 
       if (systemStore.readThread(props.threadId)) views.value += 1;
-    })
-    .catch(() => router.replace({ name: pages.ServerError }));
+    });
 
-  api
-    .execute(API.GetComments, { thread_id: Number(props.threadId) }, [
-      "id",
-      { user: ["id", "name"] },
-      "date_created",
-      "date_updated",
-      "content",
-      "is_deleted",
-      {
-        replies: [
-          "id",
-          { user: ["id", "name"] },
-          "date_created",
-          "date_updated",
-          "content",
-          "is_deleted",
-          { parent_comment: "id" },
-        ],
-      },
-      { parent_comment: "id" },
-    ])
-    .then(parseResponse)
-    .then((response) => {
-      comments.push(
-        ...response[API.GetComments].filter(
-          (comment) => !comment.parent_comment
-        )
-      );
+  fetchComments(
+    constructQuery({
+      name: API.GetComments,
+      args: { thread_id: Number(props.threadId) },
+      fields: [
+        "id",
+        { user: ["id", "name"] },
+        "date_created",
+        "date_updated",
+        "content",
+        "is_deleted",
+        {
+          replies: [
+            "id",
+            { user: ["id", "name"] },
+            "date_created",
+            "date_updated",
+            "content",
+            "is_deleted",
+            { parent_comment: "id" },
+          ],
+        },
+        { parent_comment: "id" },
+      ],
     })
-    .catch(() => (commentState.error = true))
-    .finally(() => (commentState.isLoading = false));
+  ).then(({ data: response }) => {
+    comments.push(
+      ...response.value.data[API.GetComments].filter(
+        (comment) => !comment.parent_comment
+      )
+    );
+  });
 });
 
 // Methods
@@ -344,16 +325,21 @@ const deleteThread = async () => {
   new apiRequest()
     .execute(API.DeleteThread, { id: Number(props.threadId) })
     .then(parseResponse)
-    .then(async (response) => {
-      if (!response[API.DeleteThread]) throw new Error();
-      await modalStore.openModal("게시글이 삭제되었습니다.", null, {
-        actions: modalPresets.OK,
-      });
-      router.push({
-        name: pages.ThreadList,
-        params: { boardId: props.boardId },
-        replace: true,
-      });
+    .then((response) => {
+      if (!response[API.DeleteThread])
+        throw new Error("게시글을 삭제하지 못했습니다.");
+
+      modalStore
+        .openModal("게시글이 삭제되었습니다.", null, {
+          actions: modalPresets.OK,
+        })
+        .then(
+          router.push({
+            name: pages.ThreadList,
+            params: { boardId: props.boardId },
+            replace: true,
+          })
+        );
     })
     .catch(modalStore.showErrorMessage);
 };
@@ -367,7 +353,8 @@ const updateLike = useDebounceFn(() => {
     })
     .then(parseResponse)
     .then((response) => {
-      if (!response[API.UpdateThreadActions]) throw new Error();
+      if (!response[API.UpdateThreadActions])
+        throw new Error("좋아요 표시에 실패했습니다.");
     })
     .catch(modalStore.showErrorMessage);
 }, 250);
@@ -380,28 +367,29 @@ const toggleLike = () => {
   likes.state?.toggle();
   updateLike();
 };
-const updateBookmark = useDebounceFn(() => {
+const updateFavorite = useDebounceFn(() => {
   new apiRequest()
     .execute(API.UpdateThreadActions, {
       user_id: Number(systemStore.currentUser.id),
       thread_id: Number(props.threadId),
-      is_cancel: !bookmarks.state?.value,
+      is_cancel: !favorites.state?.value,
       option: "favorite",
     })
     .then(parseResponse)
     .then((response) => {
-      if (!response[API.UpdateThreadActions]) throw new Error();
+      if (!response[API.UpdateThreadActions])
+        throw new Error("관심글 등록에 실패했습니다.");
     })
     .catch(modalStore.showErrorMessage);
 }, 250);
-const toggleBookmark = () => {
+const toggleFavorite = () => {
   if (!loggedIn.value) {
     modalStore.showNeedLoginMessage();
     return;
   }
 
-  bookmarks.state?.toggle();
-  updateBookmark();
+  favorites.state?.toggle();
+  updateFavorite();
 };
 const addComments = (newComment) => {
   if (!newComment.parent_comment) {
@@ -455,12 +443,6 @@ const deleteComment = (id) => {
 .board-name {
   font-size: 0.6em;
   color: gray;
-}
-.actions-btn {
-  position: absolute;
-  padding: 0;
-  top: 0.5em;
-  right: 1em;
 }
 
 .thread-action-counter {

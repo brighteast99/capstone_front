@@ -19,11 +19,15 @@
 
     <v-card-text class="list-area pt-2">
       <div
-        v-if="isLoading"
+        v-if="isLoading | error"
         class="d-flex flex-column justify-center align-center"
         style="height: 40dvh"
       >
-        <v-icon class="mdi-spin" icon="mdi-loading" size="50"> </v-icon>
+        <span v-if="error">
+          게시글을 불러오는 데 실패했습니다. <br />
+          나중에 다시 시도하거나 관리자에게 문의 바랍니다.
+        </span>
+        <v-icon v-else class="mdi-spin" icon="mdi-loading" size="50"> </v-icon>
       </div>
       <div
         v-else-if="!threads"
@@ -58,17 +62,18 @@
 import CustomBtn from "@/components/CustomBtn.vue";
 import ThreadPeeker from "@/components/ThreadPeeker.vue";
 
-import { reactive, defineProps, onBeforeMount } from "vue";
-import { pages } from "@/router";
+import { reactive, defineProps, watch, onBeforeMount } from "vue";
+import router, { pages } from "@/router";
 import { API, apiRequest, parseResponse, useAPI } from "@/modules/Services/API";
 import { constructQuery } from "@/modules/Services/queryBuilder";
-import router from "@/router";
-import { useSystemStore } from "@/store";
+import { useModalStore, useSystemStore } from "@/store";
 import { storeToRefs } from "pinia";
+import { safeBack } from "@/router";
 
 // Pinia Storage
 const systemStore = useSystemStore();
 const { currentUser, loggedIn } = storeToRefs(systemStore);
+const modalStore = useModalStore();
 
 // Data
 const board = reactive({
@@ -83,20 +88,41 @@ const props = defineProps({
   boardId: String,
 });
 
+// Watches
+watch(
+  () => router.currentRoute.value.params.boardId,
+  () => {
+    if (router.currentRoute.value.name != pages.ThreadList) return;
+
+    fetchBoardData();
+  }
+);
+
 // Hook
-const { isLoading, execute: getThreads } = useAPI();
 onBeforeMount(() => {
+  fetchBoardData();
+});
+
+// Methods
+const { isLoading, error, execute: getThreads } = useAPI();
+const fetchBoardData = async () => {
   // Get board data
-  new apiRequest()
-    .execute(API.GetBoard, { id: Number(props.boardId) }, [
-      "title",
-      "content",
-      "board_type",
-    ])
+  await new apiRequest()
+    .execute(
+      API.GetBoard,
+      { id: Number(router.currentRoute.value.params.boardId) },
+      ["title", "content", "board_type"]
+    )
     .then(parseResponse)
-    .then((response) => Object.assign(board, response[API.GetBoard]));
+    .then((response) => {
+      if (!response[API.GetBoard])
+        throw new Error("존재하지 않는 게시판입니다");
+      Object.assign(board, response[API.GetBoard]);
+    })
+    .catch((err) => modalStore.showErrorMessage(err).then(safeBack()));
 
   // Get threads
+  threads.splice(0, threads.length);
   getThreads(
     constructQuery({
       name: API.GetBoard,
@@ -105,6 +131,7 @@ onBeforeMount(() => {
         {
           thread_set: [
             "id",
+            { board: "id" },
             { user: ["id", "name"] },
             "title",
             "content",
@@ -117,13 +144,11 @@ onBeforeMount(() => {
         },
       ],
     })
-  )
-    .then(({ data: response }) => {
-      const data = response.value.data[API.GetBoard];
-      threads.push(...data.thread_set.filter((thread) => !thread.is_deleted));
-    })
-    .catch(() => router.replace({ name: pages.ServerError }));
-});
+  ).then(({ data: response }) => {
+    const data = response.value.data[API.GetBoard];
+    threads.push(...data.thread_set.filter((thread) => !thread.is_deleted));
+  });
+};
 </script>
 <style scoped>
 .background {

@@ -38,7 +38,11 @@ export const useSystemStore = defineStore(
         const modalStore = new useModalStore();
         const response = await modalStore.showNeedLoginMessage();
 
-        if (response === "Login") router.push({ name: pages.Login });
+        if (response === "Login")
+          router.push({
+            name: pages.Login,
+            query: { redirect: router.currentRoute.value.fullPath },
+          });
         else router.push({ name: pages.Main });
       }
     };
@@ -63,6 +67,7 @@ export const useSystemStore = defineStore(
     const readThread = (threadId) => {
       if (readThreads.value.find((x) => x.id == threadId)) return false;
 
+      let success = true;
       new apiRequest()
         .execute(API.ReadThread, { id: Number(threadId) })
         .then(parseResponse)
@@ -72,8 +77,9 @@ export const useSystemStore = defineStore(
           readThreads.value.push({ id: threadId, timestamp: new Date() });
 
           if (cleanupTimer == null) startHistoryCleanup();
-        });
-      return true;
+        })
+        .catch(() => (success = false));
+      return success;
     };
 
     /**

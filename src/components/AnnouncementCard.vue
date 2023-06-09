@@ -59,7 +59,7 @@ const {
   index,
 } = useCycleList(announcements);
 const { value: transition, toggle } = createToggle(true);
-const CYCLE_INTERVAL = 1000;
+const CYCLE_INTERVAL = 2500;
 const { pause, resume, isActive } = useIntervalFn(
   () => {
     nextAnnounce();

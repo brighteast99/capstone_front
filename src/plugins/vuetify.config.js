@@ -4,6 +4,7 @@ const customTheme = {
   dark: false,
   colors: {
     background: colors.grey.lighten4,
+    primary_lighter: colors.indigo.accent1,
     primary_accent: colors.indigo.accent3,
     primary: colors.indigo.darken1,
     primary_variant: colors.indigo.darken4,

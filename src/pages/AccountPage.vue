@@ -19,11 +19,7 @@
           justify="start"
           style="font-size: 0.9em"
         >
-          <custom-btn
-            class="pl-0"
-            weight="normal"
-            :to="{ name: pages.Login.name }"
-          >
+          <custom-btn class="pl-0" weight="normal" :to="{ name: pages.Login }">
             <template v-slot:prepend>
               <v-icon icon="mdi-chevron-left"></v-icon>
             </template>

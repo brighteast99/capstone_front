@@ -8,66 +8,73 @@
         </v-row>
 
         <!-- Form area -->
-        <v-form ref="loginForm" style="width: 100%" @submit.prevent="login">
+        <v-form style="width: 100%" @submit.prevent="login">
           <v-row>
             <v-text-field
-              v-model="formData.my_id"
+              v-model="loginData.my_id"
               label="아이디"
               :error="false"
+              autofocus
             ></v-text-field>
           </v-row>
           <v-row>
             <v-text-field
-              v-model="formData.pw"
+              v-model="loginData.password"
               label="비밀번호"
               type="password"
               :error="false"
             ></v-text-field>
           </v-row>
+
           <v-row>
             <v-btn
               block
+              ref="submitBtn"
               type="submit"
               color="primary"
-              :disabled="loggingIn"
-              :loading="loggingIn"
+              :disabled="isLoading"
+              :loading="isLoading"
             >
               로그인
             </v-btn>
           </v-row>
-          <v-row>
-            <!-- <v-checkbox
-              label="로그인 유지(미구현)"
+          <!-- <v-row>
+            <v-checkbox
+              v-model="loginData.keepLogin"
+              label="로그인 유지"
               color="primary"
               hide-details
               density="compact"
-            ></v-checkbox> -->
-          </v-row>
+            >
+            </v-checkbox>
+          </v-row> -->
         </v-form>
 
         <!-- Help area -->
         <v-row class="mt-3" style="font-size: 0.9em">
-          <custom-btn
-            class="pl-0 pr-1"
-            weight="bold"
-            :to="{ name: pages.FindUID.name }"
-          >
-            아이디
-          </custom-btn>
           <v-col>
-            <p class="text-disabled">/</p>
+            <custom-btn
+              class="pl-0 pr-1"
+              weight="bold"
+              :to="{ name: pages.FindUID }"
+            >
+              아이디
+            </custom-btn>
+          </v-col>
+          <v-col>
+            <span class="text-disabled">/</span>
           </v-col>
           <v-col>
             <custom-btn
               class="pl-1 pr-0"
               weight="bold"
-              :to="{ name: pages.FindPW.name }"
+              :to="{ name: pages.FindPW }"
             >
               비밀번호
             </custom-btn>
           </v-col>
           <v-col>
-            <p class="text-disabled">를 잊어버렸어요</p>
+            <span class="text-disabled">가 기억나지 않아요</span>
           </v-col>
 
           <v-spacer></v-spacer>
@@ -76,9 +83,9 @@
             <custom-btn
               class="pr-0"
               weight="bold"
-              :to="{ name: pages.Register.name }"
+              :to="{ name: pages.Register }"
             >
-              계정이 없어요
+              아직 계정이 없어요
             </custom-btn>
           </v-col>
         </v-row>
@@ -96,6 +103,11 @@ import { modalPresets } from "@/store/modal.store";
 import LogoGroup from "@/components/LogoGroup.vue";
 import router, { pages } from "@/router";
 import { validMyID, validPW } from "@/modules/validator";
+import { onLongPress } from "@vueuse/core";
+import { API, useAPI } from "@/modules/Services/API";
+import { constructQuery } from "@/modules/Services/queryBuilder";
+
+const submitBtn = ref();
 
 // Styles
 const defaults = {
@@ -114,46 +126,57 @@ const defaults = {
   },
 };
 
-// Component
-const loginForm = ref(null);
-
 // Pinia storage
 const systemStore = useSystemStore();
+systemStore;
 const modalStore = useModalStore();
 
 // Data
-const formData = reactive({
+const loginData = reactive({
   my_id: "",
-  pw: "",
+  password: "",
 });
-const loggingIn = ref(false);
+// const keepLogin = ref(false);
+const skipValidityCheck = ref(false);
 
 // Methods
-const login = async () => {
-  loggingIn.value = true;
-  if (!validMyID(formData.my_id) || !validPW(formData.pw)) {
-    await loginFailed();
-    loggingIn.value = false;
-    return;
-  }
+onLongPress(submitBtn, () => (skipValidityCheck.value = true), {
+  delay: 1000,
+});
+const { isLoading, execute } = useAPI();
+const login = () => {
+  if (
+    !skipValidityCheck.value &&
+    (!validMyID(loginData.my_id) || !validPW(loginData.password))
+  )
+    return loginFailed();
 
-  systemStore
-    .login({ my_id: formData.my_id, password: formData.pw })
-    .then((result) => {
-      if (result) router.push({ name: pages.Main.name });
+  execute(
+    constructQuery({
+      name: API.SignIn,
+      args: loginData,
+      fields: ["id", "name", "email", "is_staff"],
     })
-    .catch(async () => await loginFailed())
-    .finally(() => (loggingIn.value = false));
+  )
+    .then(({ data: response }) => {
+      if (!response.value.data[API.SignIn]) loginFailed();
+      else {
+        systemStore.login({ ...loginData, ...response.value.data[API.SignIn] });
+        router.push(
+          router.currentRoute.value.query.redirect ?? {
+            name: pages.Main,
+            replace: true,
+          }
+        );
+      }
+    })
+    .catch(modalStore.showErrorMessage)
+    .finally(() => (skipValidityCheck.value = false));
 };
-
-const loginFailed = async () => {
-  await modalStore.openModal(
-    "아이디 또는 비밀번호가 올바르지 않습니다.",
-    null,
-    {
-      actions: modalPresets.OK,
-    }
-  );
+const loginFailed = () => {
+  modalStore.openModal("아이디 또는 비밀번호가 올바르지 않습니다.", null, {
+    actions: modalPresets.OK,
+  });
 };
 </script>
 

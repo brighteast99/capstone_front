@@ -13,13 +13,13 @@
           <custom-btn
             class="board-included"
             weight="bold"
-            @click="menuMVs.boards = true"
+            @click="menuMVs.boards.value = true"
           >
             게시판
           </custom-btn>
-          <custom-btn weight="bold" :to="{ name: pages.Search.name }"
-            >검색</custom-btn
-          >
+          <custom-btn weight="bold" :to="{ name: pages.Search }">
+            검색
+          </custom-btn>
 
           <v-spacer></v-spacer>
 
@@ -29,7 +29,7 @@
               variant="outlined"
               size="small"
               color="primary"
-              :to="{ name: pages.Login.name }"
+              :to="{ name: pages.Login }"
               style="margin-right: 10px"
             >
               로그인
@@ -38,7 +38,7 @@
               variant="flat"
               size="small"
               color="primary"
-              :to="{ name: pages.Register.name }"
+              :to="{ name: pages.Register }"
             >
               회원가입
             </v-btn>
@@ -49,9 +49,8 @@
             <!-- Alerts icon -->
             <div style="position: relative; margin: auto; margin-right: 10px">
               <custom-btn
-                :active="menuMVs.alert"
-                color="primary"
-                @click="menuMVs.alert = !menuMVs.alert"
+                :active="menuMVs.alert.value"
+                @click="menuMVs.alert.toggle()"
               >
                 <v-icon icon="mdi-bell" size="28"></v-icon>
               </custom-btn>
@@ -64,12 +63,9 @@
             </div>
 
             <!-- Profile icon -->
-            <v-avatar
-              class="profile"
-              color="primary"
-              @click="menuMVs.menu = !menuMVs.menu"
-            >
-              <v-icon icon="mdi-account"> </v-icon>
+            <v-avatar class="profile" @click="menuMVs.menu.toggle()">
+              <v-icon icon="mdi-account-circle" size="50" color="primary">
+              </v-icon>
             </v-avatar>
 
             <!-- Menus -->
@@ -77,9 +73,9 @@
               <!-- Alerts -->
               <v-card
                 class="menu"
-                v-if="menuMVs.alert"
+                v-if="menuMVs.alert.value"
                 width="300"
-                v-click-outside="() => (menuMVs.alert = false)"
+                v-click-outside="() => (menuMVs.alert.value = false)"
               >
                 <v-card-title class="pb-0">
                   <span style="letter-spacing: 2px; vertical-align: middle">
@@ -117,25 +113,24 @@
 
               <!-- User menus -->
               <v-card
-                v-else-if="menuMVs.menu"
+                v-else-if="menuMVs.menu.value"
                 class="menu"
-                v-click-outside="() => (menuMVs.menu = false)"
+                v-click-outside="() => (menuMVs.menu.value = false)"
               >
+                <v-card-title class="d-flex pa-3 align-center">
+                  <v-avatar>
+                    <v-icon icon="mdi-account-circle" size="40" color="primary">
+                    </v-icon>
+                  </v-avatar>
+                  <div class="text-left ml-2">
+                    <p class="name">{{ currentUser.name }}</p>
+                    <p class="email">{{ currentUser.email }}</p>
+                  </div>
+                </v-card-title>
+
+                <v-divider class="mx-2"></v-divider>
+
                 <v-list density="compact" variant="text">
-                  <v-list-item>
-                    <template v-slot:prepend>
-                      <v-avatar color="primary" size="small">
-                        <v-icon icon="mdi-account" size="small"></v-icon>
-                      </v-avatar>
-                    </template>
-                    <div class="text-left mr-3">
-                      <p class="name">{{ currentUser.name }}</p>
-                      <p class="email">{{ currentUser.email }}</p>
-                    </div>
-                  </v-list-item>
-
-                  <v-divider></v-divider>
-
                   <div v-for="item in items" :key="item">
                     <v-list-item
                       v-for="item in item"
@@ -145,9 +140,9 @@
                       :to="{
                         name: item.routeName,
                         params: { userId: currentUser.id },
+                        query: item.query,
                       }"
                       :active="false"
-                      @click="menuMVs.menu = false"
                     >
                     </v-list-item>
                     <v-divider></v-divider>
@@ -169,11 +164,10 @@
 
     <!-- Navigation menu -->
     <v-slide-y-transition>
-      <v-container v-if="menuMVs.boards" class="boards-list py-1" fluid>
+      <v-container v-if="menuMVs.boards.value" class="boards-list py-1" fluid>
         <v-row
           v-click-outside="{
-            handler: () => (menuMVs.boards = false),
-            include: boardsInclude,
+            handler: () => (menuMVs.boards.value = false),
           }"
           class="boards-list-area"
         >
@@ -181,62 +175,50 @@
             class="pa-0 d-flex flex-column justify-center"
             style="flex-basis: 24px; flex-grow: 0"
           >
-            <v-icon
-              v-if="!position.left"
-              icon="mdi-chevron-left"
-              color="grey"
-            ></v-icon>
+            <v-slide-x-transition origin="right">
+              <v-icon
+                v-if="overflows && !left"
+                icon="mdi-chevron-left"
+                color="grey"
+              ></v-icon>
+            </v-slide-x-transition>
           </v-col>
 
-          <v-col class="boards-list-boundary">
-            <div class="d-flex" style="width: 100%">
-              <div
-                v-intersect="
-                  (isInterSecting) => (position.left = isInterSecting)
-                "
-                style="width: 1px"
-              ></div>
-
-              <div
-                v-for="boards in categories"
-                :key="boards"
-                class="boards-list-column"
-              >
-                <custom-btn
-                  v-for="board in boards"
-                  :key="board"
-                  class="mb-1"
-                  default-color="white"
-                  :to="{
-                    name: pages.PostList.name,
-                    params: { boardId: board.boardId },
-                  }"
-                  :size="16"
-                  @click="menuMVs.boards = false"
-                >
-                  <p class="text-left">
-                    {{ board.title }}
-                  </p>
-                </custom-btn>
+          <v-col ref="list" class="boards-list-boundary">
+            <div ref="listInner" class="d-flex" style="min-width: 975px">
+              <div v-for="boards in boardGroups" :key="boards" class="d-flex">
+                <div class="boards-list-grid">
+                  <custom-btn
+                    v-for="board in boards"
+                    :key="board"
+                    :active="
+                      router.currentRoute.value.fullPath ==
+                      `/boards/${board.id}/threads`
+                    "
+                    class="mb-1"
+                    color="primary_lighter"
+                    default-color="white"
+                    :to="{
+                      name: pages.ThreadList,
+                      params: { boardId: board.id },
+                    }"
+                    :size="16"
+                  >
+                    <p class="text-left">
+                      {{ board.title }}
+                    </p>
+                  </custom-btn>
+                </div>
+                <v-divider vertical color="grey"></v-divider>
               </div>
 
               <div
-                class="text-h5 d-flex justify-center align-center"
-                style="
-                  flex-grow: 1;
-                  color: rgba(255, 255, 255, 0.1);
-                  min-width: fit-content;
-                "
+                class="text-h5 d-flex justify-center align-center px-10"
+                style="flex-grow: 1; min-width: fit-content"
+                :style="{ color: error ? 'gray' : 'rgba(255, 255, 255, 0.1)' }"
               >
-                서비스 확대 준비중입니다
+                {{ error ? "오류가 발생했습니다" : "서비스 확대 준비중입니다" }}
               </div>
-
-              <div
-                v-intersect="
-                  (isInterSecting) => (position.right = isInterSecting)
-                "
-                style="width: 1px"
-              ></div>
             </div>
           </v-col>
 
@@ -244,11 +226,13 @@
             class="pa-0 d-flex flex-column justify-center"
             style="flex-basis: 24px; flex-grow: 0"
           >
-            <v-icon
-              v-if="!position.right"
-              icon="mdi-chevron-right"
-              color="grey"
-            ></v-icon>
+            <v-slide-x-reverse-transition>
+              <v-icon
+                v-if="overflows && !right"
+                icon="mdi-chevron-right"
+                color="grey"
+              ></v-icon>
+            </v-slide-x-reverse-transition>
           </v-col>
         </v-row>
       </v-container>
@@ -260,11 +244,20 @@
 import CustomBtn from "@/components/CustomBtn.vue";
 import LogoGroup from "@/components/LogoGroup.vue";
 
-import { reactive, computed } from "vue";
+import { ref, reactive, computed, watch } from "vue";
+import { useElementSize, useScroll, toRefs } from "@vueuse/core";
 import { useSystemStore, useModalStore } from "@/store";
 import { storeToRefs } from "pinia";
-import { modalResponses } from "@/store/modal.store";
-import { pages } from "@/router";
+import { modalResponses, modalActions } from "@/store/modal.store";
+import router, { pages } from "@/router";
+import { createToggle } from "@/modules/utility";
+import { onBeforeMount } from "vue";
+import { API, useAPI } from "@/modules/Services/API";
+import { constructQuery } from "@/modules/Services/queryBuilder";
+
+// Component
+const list = ref();
+const listInner = ref();
 
 // Style
 const defaults = {
@@ -290,74 +283,91 @@ const { loggedIn, currentUser } = storeToRefs(systemStore);
 const modalStore = useModalStore();
 
 // Data
-const position = reactive({ left: true, right: false });
-const categories = [
-  [
-    {
-      title: "공지사항",
-      boardId: "Announcement",
-    },
-
-    {
-      title: "최신 프로젝트",
-      boardId: "Latest",
-    },
-
-    {
-      title: "인기 프로젝트",
-      boardId: "Trending",
-    },
-  ],
-
-  [
-    {
-      title: "프로젝트",
-      boardId: "Projects",
-    },
-  ],
-];
+const { width: outterWidth } = useElementSize(list);
+const { width: innerWidth } = useElementSize(listInner);
+const overflows = computed(() => innerWidth.value >= outterWidth.value);
+const { arrivedState } = useScroll(list);
+const { left, right } = toRefs(arrivedState);
+const boardGroups = reactive([]);
 const items = [
   [
     {
       title: "내 정보",
       value: 1,
-      appendIcon: "mdi-account-circle",
-      routeName: pages.UserInfo.name,
+      appendIcon: "mdi-clipboard-account",
+      routeName: pages.UserInfo,
     },
     {
       title: "작성글 목록",
-      value: 3,
-      appendIcon: "mdi-newspaper-variant-multiple",
-      routeName: pages.UserPosts.name,
+      value: 2,
+      appendIcon: "mdi-playlist-edit",
+      routeName: pages.UserInfo,
+      query: { tab: "recruits" },
     },
     {
       title: "관심글 목록",
-      value: 4,
-      appendIcon: "mdi-bookmark-multiple",
-      routeName: pages.UserBookmarks.name,
+      value: 3,
+      appendIcon: "mdi-playlist-star",
+      routeName: pages.UserInfo,
+      query: { tab: "favorites" },
     },
   ],
 ];
 const alerts = computed(() => 10);
-const menuMVs = reactive({ boards: false, alert: false, menu: false });
+const menuMVs = reactive({
+  boards: createToggle(false),
+  alert: createToggle(false),
+  menu: createToggle(false),
+});
+
+// Watch
+watch(
+  () => router.currentRoute.value,
+  () => {
+    menuMVs.boards.value = false;
+    menuMVs.alert.value = false;
+    menuMVs.menu.value = false;
+  }
+);
+
+// Hook
+const { error, execute: LoadBoards } = useAPI();
+onBeforeMount(() => {
+  LoadBoards(
+    constructQuery({
+      name: API.GetBoards,
+      args: null,
+      fields: ["id", "title", "board_type"],
+    })
+  ).then(({ data: response }) => {
+    let specials = [];
+    let generals = [];
+
+    response.value.data[API.GetBoards].map((board) => {
+      if (board.board_type == "SPECIAL") specials.push(board);
+      else generals.push(board);
+    });
+
+    boardGroups.push(specials);
+    boardGroups.push(generals);
+  });
+});
 
 // Methods
-const logout = async () => {
-  if (
-    (await modalStore.openModal("로그아웃하시겠습니까?", null, {
+const logout = () => {
+  modalStore
+    .openModal("로그아웃하시겠습니까?", null, {
       actions: [
-        { label: "로그아웃", color: "error" },
-        { label: "취소", response: modalResponses.Cancel, color: "black" },
+        { label: "로그아웃", response: modalResponses.OK, color: "error" },
+        modalActions.SafeCancel,
       ],
-    })) === modalResponses.Cancel
-  )
-    return;
-
-  systemStore.logOut();
-  menuMVs.menu = false;
-};
-const boardsInclude = () => {
-  return [document.querySelector(".board-included")];
+    })
+    .then((response) => {
+      if (response === modalResponses.OK) {
+        menuMVs.menu.value = false;
+        systemStore.logOut();
+      }
+    });
 };
 </script>
 
@@ -368,12 +378,14 @@ const boardsInclude = () => {
   background-color: white;
   font-size: 1.2rem;
   z-index: 2;
+  min-width: 1024px;
+  box-shadow: 0 0 5px 1px #a0a0a0;
 }
 
 .boards-list {
   position: fixed;
   top: 72px;
-  background-color: rgba(40, 40, 40, 0.9);
+  background-color: rgba(0, 0, 0, 0.8);
   z-index: 1;
 }
 
@@ -393,7 +405,13 @@ const boardsInclude = () => {
   display: none;
 }
 
-.boards-list-column {
+.boards-category-title {
+  margin-left: 20px;
+  font-weight: bold;
+  font-size: 1.2em;
+  color: white;
+}
+.boards-list-grid {
   display: grid;
   grid-template-rows: repeat(auto-fill, 20px);
   row-gap: 5px;
@@ -406,11 +424,13 @@ const boardsInclude = () => {
 .name {
   font-size: 1em;
   font-weight: 800;
+  line-height: 1;
 }
 .email {
-  margin-top: -5px;
   font-size: 0.8em;
   color: grey;
+  line-height: 1;
+  margin: 0.2em 0 0 0.1em;
 }
 
 .v-list .v-divider {

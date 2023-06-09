@@ -1,28 +1,39 @@
 <template>
   <v-app>
     <!-- Header -->
-    <page-header v-show="interfaceStore.displayUI"></page-header>
-    <!-- Modal -->
-    <custom-dialog></custom-dialog>
+    <top-navbar v-show="!hideTopNavbar"></top-navbar>
     <!-- Main -->
     <v-main
       :style="{
-        marginTop: (interfaceStore.displayUI ? '72' : '0') + 'px',
+        marginTop: (hideTopNavbar ? '0' : '72') + 'px',
         position: 'relative',
       }"
     >
       <v-container class="pa-0" fluid style="max-width: 1024px">
-        <router-view :key="$route.fullPath"> </router-view>
+        <router-view> </router-view>
       </v-container>
     </v-main>
   </v-app>
 </template>
 <script setup>
-import PageHeader from "@/components/PageHeader.vue";
-import { useInterfaceStore } from "@/store";
-import CustomDialog from "./components/CustomDialog.vue";
+import TopNavbar from "./components/TopNavbar.vue";
 
-const interfaceStore = useInterfaceStore();
+import { computed, onMounted } from "vue";
+import router from "@/router";
+import { useSystemStore } from "./store";
+
+// Pinia
+const systemStore = useSystemStore();
+
+// Data
+const hideTopNavbar = computed(
+  () => router.currentRoute.value.meta.hideTopNavbar
+);
+
+onMounted(() => {
+  systemStore.verify();
+  systemStore.startHistoryCleanup();
+});
 </script>
 
 <style scoped>

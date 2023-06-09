@@ -1,4 +1,7 @@
+import axios from "axios";
+import { useAxios } from "@vueuse/integrations/useAxios";
 import HTTP from "./HTTP";
+import { constructQueryString } from "./queryBuilder";
 
 const API = {
   Test: "test",
@@ -10,45 +13,96 @@ const API = {
   SearchUserForPW: "search_user_for_password",
   ModifyPassword: "modify_user_password",
   GetUser: "user",
+  GetFavorites: "my_favorite_thread",
   GetUsers: "users",
   EditUser: "edit_user",
+  GetBoards: "boards",
+  GetBoard: "board",
+  SearchThreads: "threads",
+  CreateThread: "create_thread",
+  GetThread: "thread",
+  ReadThread: "update_view",
+  EditThread: "edit_thread",
+  DeleteThread: "remove_thread",
+  GetThreadActions: "action_for_thread",
+  UpdateThreadActions: "update_action",
+  CreateComment: "create_comment",
+  GetComments: "comments",
+  UpdateComment: "update_comment",
+  DeleteComment: "remove_comment",
 };
 Object.freeze(API);
 
-/**
- *
- * @param {string} name - API 이름
- * @param {Object} args - API와 전달할 인자
- * @param {string | string[]} fields - 반환받을 필드
- *
- * @returns Axios Promise
- */
-const apiRequest = (name, args, fields) => {
-  let argString = "";
-  for (const key of Object.keys(args)) {
-    //Wrap value with "" if type is string
-    if (typeof args[key] == "string") argString += `${key}:"${args[key]}"`;
-    else argString += `${key}:${args[key]}`;
-    argString += " ";
-  }
-  argString = argString.trimEnd();
+export { API };
 
-  let fieldString = "";
-  if (typeof fields == "object")
-    fieldString = fields.reduce((accum, current) => `${accum} ${current}`);
-  else if (fields) fieldString = fields;
-
-  let queryString = `{${name}(${argString})${
-    fieldString.length > 0 ? ` { ${fieldString} }` : ""
-  }}`;
-  return HTTP.post("", { query: queryString });
+export const apiRequest = function () {
+  this.querySet = [];
 };
 
-const parseResponse = (_response) => {
+/**
+ * Execute API
+ *
+ * @param {string} name API name
+ * @param {Object} args arguments
+ * @param {string | Object | (string|Object|Array)[]} fields fields to be returned
+ *
+ * @returns {Promise} Axios promise
+ */
+apiRequest.prototype.execute = function (name, args, fields) {
+  this.querySet.push(constructQueryString(name, args, fields));
+  return this.send();
+};
+
+/**
+ * Push an API request to the queue
+ *
+ * @param {string} name API name
+ * @param {Object} args arguments
+ * @param {string | Object | (string|Object|Array)[]} fields fields to be returned
+ * @returns {this}
+ */
+apiRequest.prototype.push = function (name, args, fields) {
+  this.querySet.push(constructQueryString(name, args, fields));
+  return this;
+};
+
+/**
+ * Executes all the requests in the queue
+ *
+ * @returns {Promise} Axios Promise
+ */
+apiRequest.prototype.send = function () {
+  const finalQuery = this.querySet.join(" ");
+  this.querySet = [];
+  return HTTP.post("", { query: `{ ${finalQuery} }` });
+};
+
+export const parseResponse = (_response) => {
   return new Promise((resolve) => {
     const response = _response.data;
     resolve(response["data"]);
   });
 };
 
-export { API, apiRequest, parseResponse };
+/**
+ *
+ * @param {{onSuccess: function, onError: function, onFinish: function}} callbacks
+ * @returns {useAxios}
+ */
+export function useAPI(callbacks) {
+  return useAxios(
+    "",
+    { method: "POST" },
+    axios.create({
+      baseURL: "/api",
+      withCredentials: true,
+      xsrfCookieName: "csrftoken",
+      xsrfHeaderName: "X-CSRFToken",
+    }),
+    {
+      onSuccess: callbacks?.onSuccess,
+      onError: callbacks?.onError,
+      onFinish: callbacks?.onFinish,
+    }
+  );
+}

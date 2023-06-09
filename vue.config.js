@@ -5,9 +5,10 @@ module.exports = defineConfig({
   transpileDependencies: true,
 
   devServer: {
+    allowedHosts: "all",
     proxy: {
       "/api": {
-        target: "http://3.37.141.92:8000/",
+        target: process.env.VUE_APP_API_URL,
         changeOrigin: true,
         pathRewrite: {
           "^/api": "",

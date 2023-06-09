@@ -1,7 +1,7 @@
 <template>
   <v-defaults-provider :defaults="defaults">
     <!-- Menu area-->
-    <div class="wysiwyg-menu" v-if="props.editable">
+    <div class="wysiwyg-menu" v-if="props.editMode">
       <v-spacer></v-spacer>
 
       <!-- Font -->
@@ -97,9 +97,10 @@
           ></v-sheet>
         </div>
 
-        <v-menu activator="parent" @update:model-value="menuMVs.Color = $event">
+        <v-menu activator="parent">
           <v-color-picker
             v-model="fontColor"
+            class="px-0"
             mode="hex"
             hide-canvas
             hide-sliders
@@ -129,10 +130,7 @@
           ></v-sheet>
         </div>
 
-        <v-menu
-          activator="parent"
-          @update:model-value="menuMVs.Highlight = $event"
-        >
+        <v-menu activator="parent">
           <v-color-picker
             v-model="highlightColor"
             mode="hex"
@@ -276,10 +274,10 @@
       </custom-btn>
 
       <!-- Image -->
-      <custom-btn
+      <!-- <custom-btn
         class="image-included"
-        @mouseenter="setTimer(0)"
-        @mouseleave="clearTimer(0)"
+        @mouseenter="openImageForm"
+        @mouseleave="cancelOpenImageForm"
       >
         <div class="wysiwyg-stacked-icon">
           <div class="wysiwyg-icon-area">
@@ -368,13 +366,13 @@
             </v-form>
           </v-card>
         </v-menu>
-      </custom-btn>
+      </custom-btn> -->
 
       <!-- Link -->
       <custom-btn
         class="link-included"
-        @mouseenter="setTimer(1)"
-        @mouseleave="clearTimer(1)"
+        @mouseenter="openLinkForm"
+        @mouseleave="cancelOpenLinkForm"
       >
         <div class="wysiwyg-stacked-icon">
           <div class="wysiwyg-icon-area">
@@ -455,7 +453,7 @@
     </div>
 
     <!-- Editor area -->
-    <editor-content :editor="editor" :class="{ editing: props.editable }" />
+    <editor-content :editor="editor" :class="{ editing: props.editMode }" />
   </v-defaults-provider>
 </template>
 
@@ -471,7 +469,7 @@ import {
   defineEmits,
   watch,
   watchEffect,
-  onMounted,
+  onBeforeMount,
   onUnmounted,
 } from "vue";
 
@@ -488,8 +486,9 @@ import { Highlight } from "@tiptap/extension-highlight";
 import { TextAlign } from "@tiptap/extension-text-align";
 import { Image } from "@tiptap/extension-image";
 import Link from "@tiptap/extension-link";
+import { useTimeoutFn } from "@vueuse/core";
 
-import { useTextEditor } from "@/store";
+// import { useTextEditor } from "@/store";
 
 // Styles
 const MENU_OPEN_DELAY = 50;
@@ -529,11 +528,11 @@ const swatches = [
 ];
 
 // Components
-const imageForm = ref(null);
-const linkForm = ref(null);
+const imageForm = ref();
+const linkForm = ref();
 
 // Pinia storage
-const store = useTextEditor();
+// const store = useTextEditor();
 
 // Data
 const editor = useEditor({
@@ -577,7 +576,7 @@ const editor = useEditor({
 const fontSize = computed({
   get: () => {
     const size = editor.value?.getAttributes("textStyle").fontSize;
-    if (!size || size == "") return fontSizes[1];
+    if (!size) return fontSizes[1];
     return parseInt(size, 10);
   },
   set: (value) => {
@@ -588,7 +587,7 @@ const fontSize = computed({
 const fontColor = computed({
   get: () => {
     const color = editor.value?.getAttributes("textStyle").color;
-    if (color == null || color === "") return "#000000";
+    if (!color) return "#000000";
     return color;
   },
   set: (value) => {
@@ -618,27 +617,25 @@ const listIcon = computed(() =>
     : "mdi-format-list-bulleted"
 );
 
-const imageFormData = reactive({
-  sourceIsURL: true,
-  url: "",
-  file: [],
-  rules: [
-    (v) => {
-      if (imageFormData.sourceIsURL || v === null) return true;
-      for (const file of v)
-        if (file.size > 3 * 1024 * 1024)
-          return "3MB 이하 이미지만 첨부 가능합니다.";
-      return true;
-    },
-  ],
-});
+// const imageFormData = reactive({
+//   sourceIsURL: true,
+//   url: "",
+//   file: [],
+//   rules: [
+//     (v) => {
+//       if (imageFormData.sourceIsURL || !v) return true;
+//       for (const file of v)
+//         if (file.size > 3 * 1024 * 1024)
+//           return "3MB 이하 이미지만 첨부 가능합니다.";
+//       return true;
+//     },
+//   ],
+// });
 const linkFormData = reactive({
   specifyName: false,
   url: "",
   name: "",
 });
-
-const timers = reactive({ image: null, link: null });
 const menuMVs = reactive({
   FontSize: false,
   Color: false,
@@ -648,20 +645,20 @@ const menuMVs = reactive({
   Image: false,
   Link: false,
 });
-const floatMenu = computed(() =>
-  Object.values(menuMVs).reduce((accum, value) => accum | value, false)
-);
+const floatMenu = computed(() => Object.values(menuMVs).some((value) => value));
 
 // Props & Emits
 const props = defineProps({
-  modelValue: Object,
-  editable: Boolean,
+  modelValue: {
+    Type: Object | String,
+  },
+  editMode: Boolean,
 });
 const emit = defineEmits(["update:modelValue"]);
 
 // watches
 watch(
-  () => props.editable,
+  () => props.editMode,
   (value) => {
     editor.value?.setEditable(value);
   }
@@ -680,7 +677,7 @@ watch(
   }
 );
 watchEffect(() => {
-  if (props.editable) editor.value?.setEditable(!floatMenu.value);
+  if (props.editMode) editor.value?.setEditable(!floatMenu.value);
 
   if (!menuMVs.Image) imageForm.value?.reset();
 
@@ -692,7 +689,7 @@ watchEffect(() => {
 });
 
 // Hook
-onMounted(() => {
+onBeforeMount(() => {
   editor.value?.commands.setContent(props.modelValue);
 });
 onUnmounted(() => {
@@ -700,52 +697,58 @@ onUnmounted(() => {
 });
 
 // Methods
-const setTimer = (timer) => {
-  if (timer == 0)
-    timers.image = setTimeout(() => (menuMVs.Image = true), MENU_OPEN_DELAY);
-  else timers.link = setTimeout(() => (menuMVs.Link = true), MENU_OPEN_DELAY);
-};
-const clearTimer = (timer) => {
-  clearTimeout(timer == 0 ? timers.image : timers.link);
-};
-const imageInclude = () => {
-  return [document.querySelector(".image-included")];
-};
+// const { start: openImageForm, stop: cancelOpenImageForm } = useTimeoutFn(
+//   () => {
+//     menuMVs.Image = true;
+//   },
+//   MENU_OPEN_DELAY,
+//   { immediate: false }
+// );
+const { start: openLinkForm, stop: cancelOpenLinkForm } = useTimeoutFn(
+  () => {
+    menuMVs.Link = true;
+  },
+  MENU_OPEN_DELAY,
+  { immediate: false }
+);
+// const imageInclude = () => {
+//   return [document.querySelector(".image-included")];
+// };
 const linkInclude = () => {
   return [document.querySelector(".link-included")];
 };
 
-const insertImage = async () => {
-  let url;
+// const insertImage = async () => {
+//   let url;
 
-  if (imageFormData.sourceIsURL) {
-    if (imageFormData.url == null || imageFormData.url.trim() === "") {
-      menuMVs.Image = false;
-      return;
-    }
-    url = imageFormData.url.trim();
-  } else {
-    const valid = (await imageForm.value?.validate()).valid;
-    if (!valid) {
-      menuMVs.Image = false;
-      return;
-    }
-    url = store.register(imageFormData.file[0]);
-  }
+//   if (imageFormData.sourceIsURL) {
+//     if (!imageFormData.url?.trim()) {
+//       menuMVs.Image = false;
+//       return;
+//     }
+//     url = imageFormData.url.trim();
+//   } else {
+//     const valid = (await imageForm.value?.validate()).valid;
+//     if (!valid) {
+//       menuMVs.Image = false;
+//       return;
+//     }
+//     url = store.register(imageFormData.file[0]);
+//   }
 
-  editor.value?.commands.setImage({ src: url });
-  menuMVs.Image = false;
-};
+//   editor.value?.commands.setImage({ src: url });
+//   menuMVs.Image = false;
+// };
 const insertLink = () => {
   const url = linkFormData.url;
-  if (url == null || url.trim() === "") {
+  if (!url?.trim()) {
     menuMVs.Link = false;
     return;
   }
 
   let name = linkFormData.name;
   const { from, to } = editor.value?.state.selection;
-  if (linkFormData.name == null || linkFormData.name?.length == 0) {
+  if (!linkFormData.name) {
     name =
       from == to
         ? linkFormData.url
@@ -779,8 +782,8 @@ const insertLink = () => {
   outline: 0px solid transparent;
   padding: 16px;
 
-  p {
-    line-height: 1.3;
+  span {
+    line-height: 130%;
   }
   ul,
   ol {
@@ -832,6 +835,7 @@ const insertLink = () => {
   display: flex;
   flex-direction: row;
   align-items: center;
+  min-width: fit-content;
 }
 
 .wysiwyg-stacked-icon {

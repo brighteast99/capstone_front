@@ -1,18 +1,18 @@
 <template>
-  <div class="wrapper">
-    <div
-      class="container"
-      @mouseenter="isHover = true"
-      @mouseleave="isHover = false"
-    >
-      <div :style="{ color: fontColor, marginRight: 'auto' }">
+  <div class="wrapper" v-element-hover="toggleHover" @click="route">
+    <div class="container">
+      <div
+        :style="{ color: fontColor, marginRight: 'auto', whiteSpace: 'nowrap' }"
+      >
         <slot name="prepend"></slot>
       </div>
-      <button class="px-0" :style="style" @click="route">
+      <button class="px-0" :style="style">
         <slot></slot>
       </button>
 
-      <div :style="{ color: fontColor, marginLeft: 'auto' }">
+      <div
+        :style="{ color: fontColor, marginLeft: 'auto', whiteSpace: 'nowrap' }"
+      >
         <slot name="append"></slot>
       </div>
     </div>
@@ -20,12 +20,14 @@
 </template>
 
 <script setup>
-import { ref, computed, defineProps } from "vue";
+import { computed, defineProps } from "vue";
 
+import { vElementHover } from "@vueuse/components";
+import { createToggle } from "@/modules/utility";
 import { themes } from "@/plugins/vuetify.config";
 import router from "@/router";
 
-const isHover = ref(false);
+const { value: isHover, toggle: toggleHover } = createToggle(false);
 const fontColor = computed(() => {
   const activeColor = themes.customTheme.colors[props.color] ?? props.color;
   const defaultColor =
@@ -62,7 +64,7 @@ const props = defineProps({
   },
   color: {
     Type: String,
-    default: "primary_accent",
+    default: "primary",
   },
   active: {
     Type: Boolean,
@@ -90,6 +92,14 @@ button {
 .wrapper {
   width: fit-content;
   padding: 0 0.5em 0 0.5em;
+}
+
+.wrapper:hover {
+  filter: brightness(1.2);
+}
+.wrapper:active {
+  transition: all 0s;
+  filter: brightness(0.8);
 }
 
 .container {

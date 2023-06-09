@@ -1,48 +1,41 @@
 <template>
   <!-- Finding form -->
-  <template v-if="!states.found">
-    <v-form style="width: 100%" @submit.prevent="submit">
-      <v-text-field label="이메일" v-model="states.email" autofocus>
+  <template v-if="isCurrent('input-email')">
+    <v-form style="width: 100%" @submit.prevent="findUser">
+      <v-text-field label="이메일" v-model="formStates.email" autofocus>
       </v-text-field>
 
       <v-btn
         type="submit"
-        :disabled="!states.valid || states.loading"
-        :loading="states.loading"
+        :disabled="!formStates.valid"
+        :loading="isLoading"
         block
         color="primary"
       >
-        {{ states.valid ? "아이디 찾기" : "이메일을 입력해주세요" }}
+        {{ formStates.valid ? "아이디 찾기" : "유효한 이메일을 입력해주세요" }}
       </v-btn>
     </v-form>
   </template>
 
   <!-- Result view -->
-  <template v-else>
+  <template v-if="isCurrent('result')">
     <v-card class="result-card">
       <v-card-text class="result-card-text">
-        <custom-btn class="copy-btn" size="x-small" @click="copyID">
-          <v-icon icon="mdi-content-copy"> </v-icon>
-          <v-tooltip activator="parent">
-            {{ tooltipTimer == null ? "클립보드에 복사" : "복사되었습니다!" }}
-          </v-tooltip>
-        </custom-btn>
-
-        <span class="result-text">{{ states.my_id }}</span>
+        {{ my_id }}
       </v-card-text>
 
       <v-card-actions>
         <v-btn
           variant="flat"
           style="flex: 1"
-          @click="router.push({ name: pages.Login.name })"
+          @click="router.push({ name: pages.Login })"
         >
           로그인하러 가기
         </v-btn>
         <v-btn
           variant="outlined"
           style="flex: 1"
-          @click="router.push({ name: pages.FindPW.name })"
+          @click="router.push({ name: pages.FindPW })"
         >
           비밀번호 찾기
         </v-btn>
@@ -52,66 +45,55 @@
 </template>
 
 <script setup>
-import CustomBtn from "../CustomBtn.vue";
-
-import { reactive, ref, computed, defineEmits, watchEffect } from "vue";
-import { parseResponse } from "@/modules/Services/API";
-import { apiRequest, API } from "@/modules/Services/API";
+import { reactive, ref, computed, defineEmits } from "vue";
+import { API, useAPI } from "@/modules/Services/API";
+import { constructQuery } from "@/modules/Services/queryBuilder";
 import { validEmail } from "@/modules/validator";
 import { useModalStore } from "@/store";
 import { modalPresets } from "@/store/modal.store";
 import router, { pages } from "@/router";
+import { useStepper, whenever } from "@vueuse/core";
 
 // Pinia Storage
 const modalStore = useModalStore();
 
 // Data
-const states = reactive({
+const formStates = reactive({
   email: "",
-  loading: false,
-  valid: computed(() => validEmail(states.email)),
-  my_id: null,
-  found: computed(() => states.my_id != null),
+  valid: computed(() => validEmail(formStates.email)),
 });
-const tooltipTimer = ref(null);
+const my_id = ref();
+const { isCurrent, isLast, goToNext } = useStepper(["input-email", "result"]);
 
 // Emits
 const emits = defineEmits(["completed"]);
 
-// Watches
-watchEffect(() => emits("completed", states.found));
+// Watch
+whenever(isLast, () => emits("completed", true));
 
 // Methods
-const submit = () => {
-  states.loading = true;
-  apiRequest(API.SearchUserForMyID, { email: states.email })
-    .then(parseResponse)
-    .then(async (response) => {
-      states.my_id = response[API.SearchUserForMyID];
+const { isLoading, execute: _findUser } = new useAPI();
+const findUser = () => {
+  _findUser(
+    constructQuery({
+      name: API.SearchUserForMyID,
+      args: {
+        email: formStates.email,
+      },
+    })
+  )
+    .then(({ data: response }) => {
+      my_id.value = response.value.data[API.SearchUserForMyID];
 
-      if (!states.found)
-        await modalStore.openModal(
+      if (!my_id.value)
+        modalStore.openModal(
           "가입 정보가 없습니다.\n이메일 주소를 확인해주세요.",
           null,
           { actions: modalPresets.OK }
         );
+      else goToNext();
     })
-    .catch(
-      async () =>
-        await modalStore.openModal(
-          "오류가 발생했습니다.\n나중에 다시 시도하거나 관리자에게 문의해주세요.",
-          null,
-          { actions: modalPresets.OK }
-        )
-    )
-    .finally(() => (states.loading = false));
-};
-
-const copyID = () => {
-  navigator.clipboard.writeText(states.my_id);
-  tooltipTimer.value = setTimeout(() => {
-    tooltipTimer.value = null;
-  }, 1000);
+    .catch(modalStore.showErrorMessage);
 };
 </script>
 
@@ -133,12 +115,5 @@ const copyID = () => {
   align-items: center;
   font-size: 1.5em;
   position: relative;
-}
-
-.copy-btn {
-  position: absolute;
-  padding: 0;
-  top: 0.5em;
-  right: 0.5em;
 }
 </style>

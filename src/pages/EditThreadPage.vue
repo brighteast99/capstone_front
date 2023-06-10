@@ -1,6 +1,6 @@
 <template>
   <v-card class="card">
-    <v-card-title class="pa-5 pt-10 pb-0 d-flex align-center">
+    <v-card-title class="pa-5 pt-10 pb-0 d-flex align-center position-relative">
       <custom-dropdown
         class="select-board mt-n5 mb-4"
         v-model="threadData.board"
@@ -10,19 +10,25 @@
       >
       </custom-dropdown>
       <v-text-field
-        class="mt-n7 mb-4"
+        class="title mt-n7 mb-4"
         v-model="threadData.title"
-        placeholder="글 제목"
+        placeholder="글 제목(30자 이내)"
         variant="underlined"
         color="primary"
         autofocus
         hide-details
         density="compact"
+        :rules="[() => validTitle]"
         @update:focused="
           if (!event) threadData.title = threadData.title.trim();
         "
-        style="flex: 0.8 1"
       ></v-text-field>
+      <span
+        class="counter"
+        :class="validTitle ? 'text-disabled' : 'text-error'"
+      >
+        {{ `${threadData.title.length} / 30` }}
+      </span>
     </v-card-title>
 
     <v-card-text class="py-0">
@@ -68,7 +74,8 @@ import {
 } from "@/store/modal.store";
 import { API, apiRequest, parseResponse, useAPI } from "@/modules/Services/API";
 import { constructQuery } from "@/modules/Services/queryBuilder";
-import { escapeString, parseJSON } from "@/modules/utility";
+import { escapeString, extractText, parseJSON } from "@/modules/utility";
+import { useCloned } from "@vueuse/core";
 
 // Pinia storage
 const systemStore = useSystemStore();
@@ -79,7 +86,7 @@ const modalStore = useModalStore();
 let intendedLeaving = false;
 const isNewThread = computed(() => router.currentRoute.value.meta.newThread);
 const isEdited = computed(
-  () => JSON.stringify(threadData_backup) !== JSON.stringify(threadData)
+  () => JSON.stringify(threadData_backup.value) !== JSON.stringify(threadData)
 );
 const canLeave = computed(() => !systemStore.loggedIn || !isEdited.value);
 const boardList = reactive([]);
@@ -89,7 +96,10 @@ const threadData = reactive({
   content: null,
   occupation: [],
 });
-let threadData_backup;
+const { cloned: threadData_backup, sync: backup } = useCloned(threadData);
+const validTitle = computed(
+  () => (threadData.title.length > 0 && threadData.title.length <= 30) || ""
+);
 
 // Props
 const props = defineProps({
@@ -218,7 +228,10 @@ const fetchData = () => {
             },
           });
 
-        if (loadedThread.user.id != systemStore.currentUser.id)
+        if (
+          loadedThread.user.id != systemStore.currentUser.id &&
+          !systemStore.currentUser.is_staff
+        )
           throw "noPermission";
 
         loadedThread.board = loadedThread.board.id;
@@ -226,7 +239,7 @@ const fetchData = () => {
         loadedThread.content = parseJSON(loadedThread.content);
         Object.assign(threadData, loadedThread);
       }
-      threadData_backup = Object.assign({}, threadData);
+      backup();
     })
     .catch((err) => {
       intendedLeaving = true;
@@ -299,9 +312,18 @@ const { isLoading: submitting, execute } = useAPI();
 const thread = async () => {
   const operation = isNewThread.value ? "등록" : "수정";
 
-  // If no content in new thread
-  if (isNewThread.value && !isEdited.value)
-    return modalStore.openModal("제목과 내용이 필요합니다.", null, {
+  if (threadData.title.length == 0)
+    return modalStore.openModal("제목이 필요합니다.", null, {
+      actions: modalPresets.OK,
+    });
+
+  if (threadData.title.length > 30)
+    return modalStore.openModal("제목은 30자 이내여야 합니다.", null, {
+      actions: modalPresets.OK,
+    });
+
+  if (extractText(threadData.content).length == 0)
+    return modalStore.openModal("내용이 필요합니다.", null, {
       actions: modalPresets.OK,
     });
 
@@ -369,5 +391,14 @@ const beforeunloadEvent = (event) => {
 }
 .select-board {
   flex: 0 0;
+}
+.title {
+  flex: 0.8 1;
+}
+.counter {
+  position: absolute;
+  right: 1.5em;
+  top: 1.8em;
+  font-size: 0.7em;
 }
 </style>

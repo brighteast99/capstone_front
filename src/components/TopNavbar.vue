@@ -1,6 +1,6 @@
 <template>
   <div>
-    <v-container class="header" fluid>
+    <v-container class="header" fluid :style="{ height: navHeight + 'px' }">
       <v-defaults-provider :defaults="defaults">
         <v-row
           class="mx-auto align-center"
@@ -164,7 +164,12 @@
 
     <!-- Navigation menu -->
     <v-slide-y-transition>
-      <v-container v-if="menuMVs.boards.value" class="boards-list py-1" fluid>
+      <v-container
+        v-if="menuMVs.boards.value"
+        class="boards-list py-1"
+        fluid
+        :style="{ top: navHeight + 'px' }"
+      >
         <v-row
           v-click-outside="{
             handler: () => (menuMVs.boards.value = false),
@@ -279,7 +284,7 @@ const defaults = {
 
 // Pinia Storage
 const systemStore = useSystemStore();
-const { loggedIn, currentUser } = storeToRefs(systemStore);
+const { loggedIn, currentUser, navHeight } = storeToRefs(systemStore);
 const modalStore = useModalStore();
 
 // Data
@@ -384,7 +389,6 @@ const logout = () => {
 
 .boards-list {
   position: fixed;
-  top: 72px;
   background-color: rgba(0, 0, 0, 0.8);
   z-index: 1;
 }

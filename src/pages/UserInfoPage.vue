@@ -1,13 +1,8 @@
 <template>
   <v-card class="profile-card">
-    <custom-btn
-      v-if="isMyInfo"
-      class="edit-btn"
-      size="x-small"
-      @click="editInfo"
-    >
-      <v-icon icon="mdi-pencil" size="x-large"> </v-icon>
-    </custom-btn>
+    <dot-menu v-if="isMyInfo" size="small" @click="editInfo">
+      <custom-btn>프로필 수정</custom-btn>
+    </dot-menu>
     <v-container>
       <v-row>
         <v-col cols="auto">
@@ -167,7 +162,7 @@ const props = defineProps({
 
 // Watches
 watch(tab, (value) => {
-  router.push({
+  router.replace({
     name: pages.UserInfo,
     params: { userId: userId.value },
     query: { tab: value },

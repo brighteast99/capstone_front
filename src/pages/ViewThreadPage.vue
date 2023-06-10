@@ -14,7 +14,7 @@
     게시글 목록
   </custom-btn>
 
-  <v-card class="mx-auto mb-5">
+  <v-card ref="threadArea" class="mx-auto mb-5">
     <v-card-title class="pa-5 pb-0">
       <span class="title">
         {{ thread.title }}<span class="board-name"> | {{ boardTitle }}</span>
@@ -93,91 +93,129 @@
           </div>
         </template>
       </custom-btn>
+      <v-spacer></v-spacer>
+      <custom-btn
+        v-if="threadHeight > netWindowHeight * 2"
+        size="small"
+        @click="scrollY"
+      >
+        맨 위로
+      </custom-btn>
     </v-card-actions>
   </v-card>
 
-  <v-card class="mx-auto mb-5 pa-3">
-    <v-card-title class="d-flex align-baseline">
+  <v-card ref="commentArea" class="mx-auto mb-5 pa-3">
+    <v-card-title class="d-flex align-center">
       <p class="comment-title">댓글&nbsp;</p>
-      <div class="d-flex align-center">
-        <v-icon
-          class="mr-1"
-          icon="mdi-comment-text-outline"
-          size="x-small"
-        ></v-icon>
-        {{ comments_count }}
-      </div>
+      <v-icon
+        class="mr-1"
+        icon="mdi-comment-text-outline"
+        size="x-small"
+      ></v-icon>
+      {{ countActiveComment }}
+      <custom-btn size="small" @click="toggleComment()">
+        <span class="align-baseline">{{
+          displayComment ? "접기" : "펼치기"
+        }}</span>
+      </custom-btn>
     </v-card-title>
+
     <v-card-text>
       <comment-editor :threadId="props.threadId" @comment-created="addComments">
       </comment-editor>
-
-      <v-divider class="my-3"></v-divider>
-
-      <div
-        v-if="isLoading"
-        class="d-flex flex-column text-h6 justify-center align-center text-disabled"
-        style="height: 150px"
-      >
-        <v-icon class="mdi-spin" icon="mdi-loading" size="50"> </v-icon>
-      </div>
-      <div
-        v-else-if="error"
-        class="d-flex align-center justify-center text-h6 text-center text-disabled"
-        style="height: 150px"
-      >
-        댓글을 불러오는 데 실패했습니다. <br />
-        나중에 다시 시도하거나 관리자에게 문의 바랍니다.
-      </div>
-      <div
-        v-else-if="!comments?.length"
-        class="d-flex align-center justify-center text-h6 text-center text-disabled"
-        style="height: 150px"
-      >
-        아직 댓글이 없습니다. <br />
-        첫 번째 댓글을 남겨보세요!
-      </div>
-
-      <div v-else>
-        <div v-for="comment in comments" :key="comment">
-          <comment-card
-            :comment="comment"
-            :threadId="props.threadId"
-            @updated="updateComments"
-            @deleted="deleteComment"
-            @reply-created="addComments"
-          >
-          </comment-card>
-          <comment-card
-            v-for="reply in comment.replies"
-            :key="reply"
-            :comment="reply"
-            @updated="updateComments"
-            @deleted="deleteComment"
-          >
-          </comment-card>
-          <v-divider class="my-2"></v-divider>
-        </div>
-      </div>
     </v-card-text>
+
+    <v-expand-transition>
+      <v-card-text v-if="displayComment" class="py-0">
+        <v-divider class="my-3"></v-divider>
+
+        <div
+          v-if="isLoading"
+          class="d-flex flex-column text-h6 justify-center align-center text-disabled"
+          style="height: 150px"
+        >
+          <v-icon class="mdi-spin" icon="mdi-loading" size="50"> </v-icon>
+        </div>
+        <div
+          v-else-if="error"
+          class="d-flex align-center justify-center text-h6 text-center text-disabled"
+          style="height: 150px"
+        >
+          댓글을 불러오는 데 실패했습니다. <br />
+          나중에 다시 시도하거나 관리자에게 문의 바랍니다.
+        </div>
+        <div
+          v-else-if="!comments?.length"
+          class="d-flex align-center justify-center text-h6 text-center text-disabled"
+          style="height: 150px"
+        >
+          아직 댓글이 없습니다. <br />
+          첫 번째 댓글을 남겨보세요!
+        </div>
+
+        <div v-else>
+          <div v-for="comment in comments" :key="comment">
+            <comment-card
+              :comment="comment"
+              :threadId="props.threadId"
+              @updated="updateComments"
+              @deleted="deleteComment"
+              @reply-created="addComments"
+            >
+            </comment-card>
+            <comment-card
+              v-for="reply in comment.replies"
+              :key="reply"
+              :comment="reply"
+              @updated="updateComments"
+              @deleted="deleteComment"
+            >
+            </comment-card>
+            <v-divider class="my-2"></v-divider>
+          </div>
+        </div>
+      </v-card-text>
+    </v-expand-transition>
+    <v-expand-transition>
+      <v-card-actions
+        v-if="commentHeight > netWindowHeight * 2"
+        class="pa-0"
+        style="min-height: unset"
+      >
+        <v-spacer></v-spacer>
+        <custom-btn size="small" @click="scrollY(threadBottom - navHeight)">
+          맨 위로
+        </custom-btn>
+        <v-spacer></v-spacer>
+      </v-card-actions>
+    </v-expand-transition>
   </v-card>
 </template>
 
 <script setup>
 import WriterInfo from "@/components/WriterInfo.vue";
+import DotMenu from "@/components/DotMenu.vue";
 import TextEditor from "@/components/TextEditor.vue";
 import CustomBtn from "@/components/CustomBtn.vue";
 import CommentEditor from "@/components/CommentEditor.vue";
 import CommentCard from "@/components/CommentCard.vue";
 
 import { ref, reactive, computed, defineProps, onBeforeMount } from "vue";
+import {
+  useDebounceFn,
+  useElementBounding,
+  useElementSize,
+  useWindowSize,
+} from "@vueuse/core";
 import router, { pages } from "@/router";
+import { storeToRefs } from "pinia";
 import { useSystemStore, useModalStore } from "@/store";
 import {
   modalPresets,
   modalResponses,
   modalActions,
 } from "@/store/modal.store";
+import { constructQuery } from "@/modules/Services/queryBuilder";
 import { API, apiRequest, parseResponse, useAPI } from "@/modules/Services/API";
 import {
   countActiveComments,
@@ -185,17 +223,22 @@ import {
   formatDateRelative,
   parseJSON,
 } from "@/modules/utility";
-import { useDebounceFn } from "@vueuse/core";
-import { storeToRefs } from "pinia";
-import { constructQuery } from "@/modules/Services/queryBuilder";
-import DotMenu from "@/components/DotMenu.vue";
+
+// Components
+const threadArea = ref();
+const commentArea = ref();
 
 // Pinia storage
 const systemStore = useSystemStore();
-const { currentUser, loggedIn } = storeToRefs(systemStore);
+const { currentUser, loggedIn, navHeight } = storeToRefs(systemStore);
 const modalStore = useModalStore();
 
 // Data
+const { height: threadHeight, bottom: threadBottom } =
+  useElementBounding(threadArea);
+const { height: commentHeight } = useElementSize(commentArea);
+const { height: windowHeight } = useWindowSize();
+const netWindowHeight = computed(() => windowHeight.value - 70);
 const boardTitle = ref("");
 const thread = reactive({
   title: "",
@@ -217,7 +260,8 @@ const favorites = reactive({
   value: null,
 });
 const comments = reactive([]);
-const comments_count = computed(() => countActiveComments(comments));
+const countActiveComment = computed(() => countActiveComments(comments));
+const { value: displayComment, toggle: toggleComment } = createToggle(false);
 
 // Props
 const props = defineProps({
@@ -302,13 +346,15 @@ onBeforeMount(() => {
         { parent_comment: "id" },
       ],
     })
-  ).then(({ data: response }) => {
-    comments.push(
-      ...response.value.data[API.GetComments].filter(
-        (comment) => !comment.parent_comment
-      )
-    );
-  });
+  )
+    .then(({ data: response }) => {
+      comments.push(
+        ...response.value.data[API.GetComments].filter(
+          (comment) => !comment.parent_comment
+        )
+      );
+    })
+    .finally(() => (displayComment.value = countActiveComment.value > 0));
 });
 
 // Methods
@@ -429,6 +475,9 @@ const deleteComment = (id) => {
         return;
       }
   }
+};
+const scrollY = (amount = 0) => {
+  window.scrollTo({ top: window.scrollY + amount ?? 0, behavior: "smooth" });
 };
 </script>
 

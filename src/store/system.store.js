@@ -19,6 +19,10 @@ export const useSystemStore = defineStore(
     let cleanupTimer = null;
 
     const loggedIn = computed(() => currentUser.id != null);
+    const hideTopNav = computed(
+      () => router.currentRoute.value.meta.hideTopNavbar
+    );
+    const navHeight = computed(() => (hideTopNav.value ? 0 : 72));
 
     const login = (userData) => Object.assign(currentUser, userData);
     const logOut = async () => {
@@ -110,6 +114,8 @@ export const useSystemStore = defineStore(
       currentUser,
       readThreads,
       loggedIn,
+      hideTopNav,
+      navHeight,
       login,
       logOut,
       verify,

@@ -130,7 +130,7 @@ const routes = [
   {
     path: "/account",
     component: () => import("@/pages/AccountPage"),
-    meta: { ideTopNavbar: true },
+    meta: { hideTopNavbar: true },
     children: [
       {
         path: "register",

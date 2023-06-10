@@ -77,9 +77,9 @@ const modalStore = useModalStore();
 
 // Data
 const board = reactive({
-  title: "",
-  content: "",
-  board_type: "",
+  title: "게시판",
+  content: "설명",
+  board_type: "SPECIAL",
 });
 const threads = reactive([]);
 

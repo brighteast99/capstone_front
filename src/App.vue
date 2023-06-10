@@ -1,11 +1,11 @@
 <template>
   <v-app>
     <!-- Header -->
-    <top-navbar v-show="!hideTopNavbar"></top-navbar>
+    <top-navbar v-show="!hideTopNav"></top-navbar>
     <!-- Main -->
     <v-main
       :style="{
-        marginTop: (hideTopNavbar ? '0' : '72') + 'px',
+        marginTop: navHeight + 'px',
         position: 'relative',
       }"
     >
@@ -18,18 +18,15 @@
 <script setup>
 import TopNavbar from "./components/TopNavbar.vue";
 
-import { computed, onMounted } from "vue";
-import router from "@/router";
+import { onMounted } from "vue";
 import { useSystemStore } from "./store";
+import { storeToRefs } from "pinia";
 
 // Pinia
 const systemStore = useSystemStore();
+const { hideTopNav, navHeight } = storeToRefs(systemStore);
 
-// Data
-const hideTopNavbar = computed(
-  () => router.currentRoute.value.meta.hideTopNavbar
-);
-
+// Hook
 onMounted(() => {
   systemStore.verify();
   systemStore.startHistoryCleanup();

@@ -138,6 +138,12 @@ export function formatDateRelative(date, options) {
   return `${years}년 전${modified ? " (수정됨)" : ""}`;
 }
 
+export const formatLink = (link) => {
+  if (link.startsWith("http://")) return link;
+  if (link.startsWith("https://")) return link;
+  return `https://${link}`;
+};
+
 /**
  *
  * @param {JSON string} JSONstring

@@ -28,20 +28,21 @@
       <error-block v-else-if="!threads?.length" height="50dvh">
         아직 등록된 글이 없습니다.
       </error-block>
-      <div v-else v-for="thread in threads" :key="thread">
+      <div v-else v-for="thread in paginated" :key="thread">
         <thread-peeker :thread="thread"></thread-peeker>
         <v-divider class="mx-1 my-1"></v-divider>
       </div>
     </v-card-text>
 
-    <v-card-actions>
+    <v-card-actions v-if="threads.length">
       <v-spacer>
         <v-pagination
+          v-model="currentPage"
           variant="text"
-          length="10"
+          :length="pageCount"
           active-color="primary_accent"
           density="compact"
-          show-first-last-page
+          :show-first-last-page="pageCount > 10"
         >
         </v-pagination>
       </v-spacer>
@@ -54,7 +55,14 @@ import CustomBtn from "@/components/CustomBtn.vue";
 import ThreadPeeker from "@/components/ThreadPeeker.vue";
 import ErrorBlock from "@/components/ErrorBlock.vue";
 
-import { reactive, computed, defineProps, watch, onBeforeMount } from "vue";
+import {
+  ref,
+  reactive,
+  computed,
+  defineProps,
+  watch,
+  onBeforeMount,
+} from "vue";
 import router, { pages } from "@/router";
 import { API, apiRequest, parseResponse, useAPI } from "@/modules/Services/API";
 import { constructQuery } from "@/modules/Services/queryBuilder";
@@ -73,9 +81,21 @@ const board = reactive({
   content: "설명",
   board_type: "SPECIAL",
 });
-const threads = computed(() =>
-  threadsResponse.value?.data[API.GetBoard].thread_set.filter(
-    (thread) => !thread.is_deleted
+const threads = computed(
+  () =>
+    threadsResponse.value?.data[API.GetBoard].thread_set.filter(
+      (thread) => !thread.is_deleted
+    ) || []
+);
+const PAGE_SIZE = 10;
+const currentPage = ref(1);
+const pageCount = computed(
+  () => parseInt(threads.value.length / PAGE_SIZE) || 1
+);
+const paginated = computed(() =>
+  threads.value.slice(
+    PAGE_SIZE * (currentPage.value - 1),
+    PAGE_SIZE * currentPage.value
   )
 );
 
@@ -123,7 +143,6 @@ const fetchBoardData = async () => {
     .catch((err) => modalStore.showErrorMessage(err).then(safeBack()));
 
   // Get threads
-  // threads.splice(0, threads.length);
   getThreads(
     constructQuery({
       name: API.GetBoard,
@@ -147,11 +166,6 @@ const fetchBoardData = async () => {
       ],
     })
   );
-  // .then(parseResponse)
-  // .then((response) => {
-  //   const data = response[API.GetBoard];
-  //   threads.push(...data.thread_set.filter((thread) => !thread.is_deleted));
-  // });
 };
 </script>
 <style scoped>

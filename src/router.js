@@ -12,6 +12,7 @@ const pages = {
   EditThread: "EditThread",
   Search: "Search",
   UserInfo: "UserInfo",
+  EditUserInfo: "EditUserInfo",
   Login: "Login",
   Register: "Register",
   FindUID: "FindUID",
@@ -112,6 +113,13 @@ const routes = [
       return { name: to.name, params: to.params, query: { tab: "portfolio" } };
     },
   },
+  {
+    path: "/users/edit",
+    name: pages.EditUserInfo,
+    component: () => import("@/pages/EditUserInfoPage"),
+    meta: { requireLogin: true },
+  },
+
   // Login page
   {
     path: "/login",

@@ -56,7 +56,6 @@
       </v-btn>
     </v-card-actions>
   </v-card>
-  {{ threadData.recruits }}
 </template>
 
 <script setup>
@@ -379,98 +378,79 @@ const submit = async () => {
     if (isNewThread.value) data.writer_id = Number(systemStore.currentUser.id);
     else data.id = Number(props.threadId);
 
-    await execute(constructQuery({ name: apiName, args: data, fields: "id" }))
-      .then(parseResponse)
-      .then((response) => (newThreadId = response[apiName].id))
-      .catch(async () => {
-        error = true;
-        await modalStore.showErrorMessage();
-      });
+    try {
+      await execute(constructQuery({ name: apiName, args: data, fields: "id" }))
+        .then(parseResponse)
+        .then((response) => (newThreadId = response[apiName].id));
 
-    // Submit recruitment data
-    const toCreate = threadData.recruits
-      .filter((recruit) => recruit.id == null)
-      .map((recruit) => {
-        return { id: recruit.occupation.id, count: recruit.max_cnt };
-      });
-    const toWithdraw = threadData.recruits
-      .filter((recruit) => recruit.excluded)
-      .map((recruit) => recruit.id);
-    const toRevert = threadData.recruits
-      .filter((recruit) => recruit.revert)
-      .map((recruit) => recruit.id);
-    const toUpdate = threadData.recruits
-      .filter(
-        (recruit) =>
-          recruit.id != null &&
-          !(recruit.excluded || (recruit.is_stopped && !recruit.revert))
-      )
-      .map((recruit) => {
-        return { id: recruit.occupation.id, count: recruit.max_cnt };
-      });
-    const toCloseManually = threadData.recruits
-      .filter(
-        (recruit) =>
-          recruit.max_cnt > recruit.current_cnt &&
-          recruit.is_closed &&
-          !(recruit?.excluded || (recruit.is_stopped && !recruit?.revert))
-      )
-      .map((recruit) => recruit.id);
-    console.log(toCloseManually);
+      // Submit recruitment data
+      const toCreate = threadData.recruits
+        .filter((recruit) => recruit.id == null)
+        .map((recruit) => {
+          return { id: recruit.occupation.id, count: recruit.max_cnt };
+        });
+      const toWithdraw = threadData.recruits
+        .filter((recruit) => recruit.excluded)
+        .map((recruit) => recruit.id);
+      const toRevert = threadData.recruits
+        .filter((recruit) => recruit.revert)
+        .map((recruit) => recruit.id);
+      const toUpdate = threadData.recruits
+        .filter(
+          (recruit) =>
+            recruit.id != null &&
+            !(recruit.excluded || (recruit.is_stopped && !recruit.revert))
+        )
+        .map((recruit) => {
+          return { id: recruit.occupation.id, count: recruit.max_cnt };
+        });
+      const toCloseManually = threadData.recruits
+        .filter(
+          (recruit) =>
+            recruit.max_cnt > recruit.current_cnt &&
+            recruit.is_closed &&
+            !(recruit?.excluded || (recruit.is_stopped && !recruit?.revert))
+        )
+        .map((recruit) => {
+          return { id: recruit.id, occupation_id: recruit.occupation.id };
+        });
 
-    let queries = [];
-
-    if (toWithdraw.length)
-      for (const id of toWithdraw)
+      let queries = [];
+      if (toWithdraw.length)
+        for (const id of toWithdraw)
+          queries.push({
+            name: API.WithdrawRecruitment,
+            args: {
+              recruitment_id: Number(id),
+            },
+          });
+      if (toRevert.length)
+        for (const id of toRevert)
+          queries.push({
+            name: API.RevertWithdrawnRecruitment,
+            args: { id: Number(id) },
+          });
+      if (toUpdate.length)
         queries.push({
-          name: API.WithdrawRecruitment,
+          name: API.UpdateRecruitments,
           args: {
-            recruitment_id: Number(id),
+            thread_id: Number(newThreadId ?? props.threadId),
+            inputs: JSON.stringify(JSON.stringify(toUpdate)),
           },
         });
-    if (toRevert.length)
-      for (const id of toRevert)
+      if (toCreate.length)
         queries.push({
-          name: API.RevertWithdrawnRecruitment,
-          args: { id: Number(id) },
+          name: API.CreateRecruitments,
+          args: {
+            thread_id: Number(newThreadId ?? props.threadId),
+            inputs: JSON.stringify(JSON.stringify(toCreate)),
+          },
+          fields: ["id", { occupation: "id" }],
         });
-    if (toUpdate.length)
-      queries.push({
-        name: API.UpdateRecruitments,
-        args: {
-          thread_id: Number(newThreadId ?? props.threadId),
-          inputs: JSON.stringify(JSON.stringify(toUpdate)),
-        },
-      });
-    if (toCreate.length)
-      queries.push({
-        name: API.CreateRecruitments,
-        args: {
-          thread_id: Number(newThreadId ?? props.threadId),
-          inputs: JSON.stringify(JSON.stringify(toCreate)),
-        },
-      });
-    if (toCloseManually.length)
-      for (const id of toCloseManually) {
-        queries.push({
-          name: API.CloseRecruitment,
-          args: { id: Number(id) },
-        });
-      }
-    console.log(toCloseManually);
 
-    console.log(constructQuery(queries));
-
-    await execute(constructQuery(queries))
-      .then(parseResponse)
-      .then((response) => {
-        console.log("parsing response");
-        console.log(response);
-
-        if (toCreate.length && !response[API.CreateRecruitments])
-          throw new Error();
-
-        if (toWithdraw.length) {
+      await execute(constructQuery(queries))
+        .then(parseResponse)
+        .then((response) => {
           if (toWithdraw.length == 1 && !response[API.WithdrawRecruitment])
             throw new Error();
           if (
@@ -478,9 +458,7 @@ const submit = async () => {
             response[API.WithdrawRecruitment]?.some((value) => !value)
           )
             throw new Error();
-        }
 
-        if (toRevert.length) {
           if (toRevert.length == 1 && !response[API.RevertWithdrawnRecruitment])
             throw new Error();
           if (
@@ -488,25 +466,49 @@ const submit = async () => {
             response[API.RevertWithdrawnRecruitment]?.some((value) => !value)
           )
             throw new Error();
+
+          if (toUpdate.length && !response[API.UpdateRecruitments])
+            throw new Error();
+
+          if (toCreate.length && toCloseManually.length) {
+            if (!response[API.CreateRecruitments]) throw new Error();
+            for (const created of response[API.CreateRecruitments]) {
+              toCloseManually.find(
+                (recruitment) =>
+                  recruitment.occupation_id == created.occupation.id
+              ).id = created.id;
+            }
+          }
+        });
+
+      queries = [];
+      if (toCloseManually.length) {
+        for (const recruitment of toCloseManually) {
+          queries.push({
+            name: API.CloseRecruitment,
+            args: { id: Number(recruitment.id) },
+          });
         }
 
-        if (toUpdate.length && !response[API.UpdateRecruitments])
-          throw new Error();
-
-        if (toCloseManually.length) {
-          if (toCloseManually.length == 1 && !response[API.CloseRecruitment])
-            throw new Error();
-          if (
-            toCloseManually.length > 1 &&
-            response[API.CloseRecruitment]?.some((value) => !value)
-          )
-            throw new Error();
-        }
-      })
-      .catch((err) => {
-        error = true;
-        modalStore.showErrorMessage(err || "모집 직군을 설정하지 못했습니다.");
-      });
+        execute(constructQuery(queries))
+          .then(parseResponse)
+          .then((response) => {
+            if (toCloseManually.length == 1 && !response[API.CloseRecruitment])
+              throw new Error();
+            if (
+              toCloseManually.length > 1 &&
+              response[API.CloseRecruitment]?.some((value) => !value)
+            )
+              throw new Error();
+          });
+      }
+    } catch (err) {
+      console.log(err);
+      error = true;
+      modalStore.showErrorMessage(
+        err || "모집 직군 설정 중 오류가 발생했습니다"
+      );
+    }
   }
 
   if (!error) {

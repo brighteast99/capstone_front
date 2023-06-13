@@ -139,7 +139,7 @@
                       :prepend-icon="item.appendIcon"
                       :to="{
                         name: item.routeName,
-                        params: { userId: currentUser.id },
+                        params: item.params,
                         query: item.query,
                       }"
                       :active="false"
@@ -305,19 +305,29 @@ const items = [
       value: 1,
       appendIcon: "mdi-clipboard-account",
       routeName: pages.UserInfo,
+      params: { userId: currentUser.value.id },
+    },
+    {
+      title: "정보 수정",
+      value: 2,
+      appendIcon: "mdi-account-edit",
+      routeName: pages.EditUserInfo,
+      params: null,
     },
     {
       title: "작성글 목록",
-      value: 2,
+      value: 3,
       appendIcon: "mdi-playlist-edit",
       routeName: pages.UserInfo,
       query: { tab: "recruits" },
+      params: { userId: currentUser.value.id },
     },
     {
       title: "관심글 목록",
-      value: 3,
+      value: 4,
       appendIcon: "mdi-playlist-star",
       routeName: pages.UserInfo,
+      params: { userId: currentUser.value.id },
       query: { tab: "favorites" },
     },
   ],

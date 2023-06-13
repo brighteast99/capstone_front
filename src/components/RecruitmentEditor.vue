@@ -122,16 +122,7 @@
               </custom-btn>
             </div>
             <div v-if="props.existing" class="text-center w-25">
-              <v-chip
-                density="compact"
-                :color="
-                  recruit.excluded
-                    ? 'error'
-                    : recruit.is_closed
-                    ? 'warning'
-                    : 'secondary'
-                "
-              >
+              <v-chip density="compact" :color="chipColor(recruit)">
                 {{
                   recruit.excluded
                     ? "취소됨"
@@ -146,7 +137,7 @@
                 v-if="props.existing && !recruit.excluded"
                 @click="recruit.is_closed = !recruit.is_closed"
               >
-                {{ recruit.is_closed ? "모집 재개" : "모집 마감" }}
+                {{ recruit.is_closed ? "모집 재개" : "조기 마감" }}
               </custom-btn>
               <custom-btn
                 :color="recruit.excluded ? 'primary' : 'error'"
@@ -265,7 +256,14 @@ const fetchOccupations = () => {
     })
     .catch(() => (error.value = true));
 };
-
+const chipColor = (recruitment) => {
+  if (recruitment.excluded) return "error";
+  if (recruitment.is_closed) {
+    if (recruitment.current_cnt < recruitment.max_cnt) return "warning";
+    else return "secondary_variant";
+  }
+  return "secondary";
+};
 const included = (id) => {
   return allRecruits.some(
     (recruit) =>

@@ -16,6 +16,12 @@ const API = {
   GetFavorites: "my_favorite_thread",
   GetUsers: "users",
   EditUser: "edit_user",
+  CreatePortfolio: "create_portfolio",
+  GetPortfolio: "portfolio",
+  UpdatePortfolio: "edit_portfolio",
+  CreateLink: "create_link",
+  GetLinks: "links",
+  DeleteLink: "remove_link",
   GetBoards: "boards",
   GetBoard: "board",
   SearchThreads: "threads",
@@ -44,7 +50,7 @@ const API = {
   EvalApplication: "evaluate_application",
   Applications: "applications",
   UsersApplications: "user_applications",
-  UserApplication: "user_application",
+  UsersApplication: "user_application",
 };
 Object.freeze(API);
 
@@ -78,16 +84,19 @@ apiRequest.prototype.execute = function (name, args, fields) {
  */
 apiRequest.prototype.push = function (name, args, fields) {
   this.querySet.push({ name: name, args: args, fields: fields });
+
   return this;
 };
 
 /**
- * Executes all the requests in the queue
+ * Executes all the requests in the queue and flushes the queue.
  *
  * @returns {Promise} Axios Promise
  */
 apiRequest.prototype.send = function () {
-  return HTTP.post("", constructQuery(this.querySet).data);
+  const queryString = constructQuery(this.querySet).data;
+  this.querySet = [];
+  return HTTP.post("", queryString);
 };
 
 export const parseResponse = (_response) => {

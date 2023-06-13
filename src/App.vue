@@ -1,16 +1,16 @@
 <template>
   <v-app>
     <!-- Header -->
-    <top-navbar v-show="displayTopNavbar"></top-navbar>
+    <top-navbar v-show="!hideTopNav"></top-navbar>
     <!-- Main -->
     <v-main
       :style="{
-        marginTop: (displayTopNavbar ? '72' : '0') + 'px',
+        marginTop: navHeight + 'px',
         position: 'relative',
       }"
     >
       <v-container class="pa-0" fluid style="max-width: 1024px">
-        <router-view :key="$route.fullPath"> </router-view>
+        <router-view> </router-view>
       </v-container>
     </v-main>
   </v-app>
@@ -18,18 +18,15 @@
 <script setup>
 import TopNavbar from "./components/TopNavbar.vue";
 
-import { computed, onMounted } from "vue";
-import router from "@/router";
+import { onMounted } from "vue";
 import { useSystemStore } from "./store";
+import { storeToRefs } from "pinia";
 
 // Pinia
 const systemStore = useSystemStore();
+const { hideTopNav, navHeight } = storeToRefs(systemStore);
 
-// Data
-const displayTopNavbar = computed(
-  () => router.currentRoute.value.meta.useTopNavbar
-);
-
+// Hook
 onMounted(() => {
   systemStore.verify();
   systemStore.startHistoryCleanup();

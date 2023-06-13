@@ -8,7 +8,12 @@
       color="grey"
     >
     </v-icon>
-    <v-card class="w-100 pa-2" elevation="0" density="compact">
+    <v-card
+      class="w-100 pa-2"
+      :disabled="props.comment.is_deleted"
+      elevation="0"
+      density="compact"
+    >
       <v-card-title class="d-flex">
         <writer-info
           :writer="props.comment.user"

@@ -1,7 +1,7 @@
 import axios from "axios";
 import { useAxios } from "@vueuse/integrations/useAxios";
 import HTTP from "./HTTP";
-import { constructQueryString } from "./queryBuilder";
+import { constructQuery } from "./queryBuilder";
 
 const API = {
   Test: "test",
@@ -13,7 +13,7 @@ const API = {
   SearchUserForPW: "search_user_for_password",
   ModifyPassword: "modify_user_password",
   GetUser: "user",
-  GetBookmarks: "my_favorite_thread",
+  GetFavorites: "my_favorite_thread",
   GetUsers: "users",
   EditUser: "edit_user",
   GetBoards: "boards",
@@ -30,6 +30,21 @@ const API = {
   GetComments: "comments",
   UpdateComment: "update_comment",
   DeleteComment: "remove_comment",
+  GetOccupations: "occupations",
+  CreateRecruitments: "create_occupation_for_thread",
+  GetSingleRecruitment: "recruitment",
+  GetRecruitments: "recruitments",
+  UpdateRecruitments: "update_occupation_for_thread",
+  CloseRecruitment: "close_occupation_for_thread",
+  WithdrawRecruitment: "withdraw_occupation_for_thread",
+  ReopenRecruitment: "reopen_occupation_for_thread",
+  RevertWithdrawnRecruitment: "revert_withdraw",
+  Apply: "create_application",
+  CancelApplication: "cancel_application",
+  EvalApplication: "evaluate_application",
+  Applications: "applications",
+  UsersApplications: "user_applications",
+  UserApplication: "user_application",
 };
 Object.freeze(API);
 
@@ -49,7 +64,7 @@ export const apiRequest = function () {
  * @returns {Promise} Axios promise
  */
 apiRequest.prototype.execute = function (name, args, fields) {
-  this.querySet.push(constructQueryString(name, args, fields));
+  this.querySet.push({ name: name, args: args, fields: fields });
   return this.send();
 };
 
@@ -62,7 +77,7 @@ apiRequest.prototype.execute = function (name, args, fields) {
  * @returns {this}
  */
 apiRequest.prototype.push = function (name, args, fields) {
-  this.querySet.push(constructQueryString(name, args, fields));
+  this.querySet.push({ name: name, args: args, fields: fields });
   return this;
 };
 
@@ -72,15 +87,27 @@ apiRequest.prototype.push = function (name, args, fields) {
  * @returns {Promise} Axios Promise
  */
 apiRequest.prototype.send = function () {
-  const finalQuery = this.querySet.join(" ");
-  this.querySet = [];
-  return HTTP.post("", { query: `{ ${finalQuery} }` });
+  return HTTP.post("", constructQuery(this.querySet).data);
 };
 
 export const parseResponse = (_response) => {
   return new Promise((resolve) => {
-    const response = _response.data;
-    resolve(response["data"]);
+    const response = _response.data.data ?? _response.data.value.data;
+
+    let converted = {};
+    for (const key of Object.keys(response)) {
+      const match = key.match(/(.*?)(\d+)/);
+      if (!match) converted[key] = [response[key]];
+      else {
+        const basekey = match[1];
+        if (converted[basekey] != null) converted[basekey].push(response[key]);
+        else converted[basekey] = response[key];
+      }
+    }
+    for (const key of Object.keys(converted))
+      if (converted[key].length == 1) converted[key] = converted[key][0];
+
+    resolve(converted);
   });
 };
 

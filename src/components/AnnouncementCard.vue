@@ -21,10 +21,10 @@
       >
         <v-scroll-y-reverse-transition leave-absolute>
           <p v-if="transition" class="announce-title">
-            {{ transition ? currentAnnounce?.title : getPrev() }}
+            {{ transition ? currentAnnounce?.title : prevAnnounce }}
           </p>
           <p v-else class="announce-title">
-            {{ transition ? getPrev() : currentAnnounce?.title }}
+            {{ transition ? prevAnnounce : currentAnnounce?.title }}
           </p>
         </v-scroll-y-reverse-transition>
       </custom-btn>
@@ -44,12 +44,10 @@
 import CustomBtn from "./CustomBtn.vue";
 
 import { reactive, onBeforeMount, onBeforeUnmount, watchEffect } from "vue";
-import { useCycleList, useIntervalFn } from "@vueuse/core";
+import { useCycleList, useIntervalFn, usePrevious } from "@vueuse/core";
 import { pages } from "@/router";
 import { createToggle } from "@/modules/utility";
 import { API, apiRequest, parseResponse } from "@/modules/Services/API";
-
-// Pinia storage
 
 // Data
 const announcements = reactive([]);
@@ -58,8 +56,9 @@ const {
   next: nextAnnounce,
   index,
 } = useCycleList(announcements);
+const prevAnnounce = usePrevious(currentAnnounce);
 const { value: transition, toggle } = createToggle(true);
-const CYCLE_INTERVAL = 1000;
+const CYCLE_INTERVAL = 2500;
 const { pause, resume, isActive } = useIntervalFn(
   () => {
     nextAnnounce();
@@ -100,11 +99,6 @@ watchEffect(() => {
   if (announcements.length > 1 && !isActive.value) resume();
   if (announcements.length <= 1 && isActive.value) pause();
 });
-
-// Methods
-const getPrev = () => {
-  return announcements[(index - 1) % announcements.length];
-};
 </script>
 
 <style scoped>

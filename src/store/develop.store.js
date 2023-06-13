@@ -30,23 +30,23 @@ export const useDevelopStore = defineStore(
     const newThreads = reactive([
       {
         title: "새 글 1",
-        boardId: "latest",
+        boardId: 1,
         threadId: "11",
       },
       {
         title: "새 글 2",
-        boardId: "latest",
+        boardId: 1,
         threadId: "22",
       },
       {
         title: "새 글 3",
-        boardId: "latest",
+        boardId: 1,
         threadId: "33",
       },
       {
         title:
           "긴 제목 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890",
-        boardId: "latest",
+        boardId: "1",
         threadId: "44",
       },
     ]);

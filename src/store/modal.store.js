@@ -52,7 +52,7 @@ const useModalStore = defineStore("modal", () => {
    * @param {string} content - content of the modal
    * @param {{persistent:{Type: Boolean, default: true}, actions:{Type: [{label:string,  response?:string, color?:string}], default:modalActions.YesNo} }} options - Persistency, actions of the modal
    * @param {modalActions} [actions=modalActions.YesNo] - Possible Actions of the modal
-   * @returns Modal response proxy
+   * @returns {Proxy} Modal response proxy
    */
   const openModal = async (content, title, options) => {
     return new Promise((resolve, reject) => {
@@ -62,8 +62,8 @@ const useModalStore = defineStore("modal", () => {
       if (!validOption(options)) {
         reject("Invalid modal option");
       } else {
-        modalOptions.persistent = options.persistent ?? false;
-        modalOptions.actions = options.actions ?? modalPresets.YesNo;
+        modalOptions.persistent = options?.persistent ?? false;
+        modalOptions.actions = options?.actions ?? modalPresets.YesNo;
 
         toggleModal(true);
 
@@ -82,12 +82,16 @@ const useModalStore = defineStore("modal", () => {
     toggleModal(false);
     modalData.response.value = response;
   };
-  const showErrorMessage = () =>
-    openModal(
-      "오류가 발생했습니다.\n나중에 다시 시도하거나 관리자에게 문의 바랍니다.",
+  const showErrorMessage = (message) => {
+    if (message instanceof Error) message = message.message;
+    return openModal(
+      `${
+        message || "오류가 발생했습니다."
+      }\n나중에 다시 시도하거나 관리자에게 문의 바랍니다.`,
       null,
       { actions: modalPresets.OK }
     );
+  };
   const showNoPermissionMessage = () =>
     openModal("권한이 없습니다!", null, {
       actions: [{ label: "OK" }],

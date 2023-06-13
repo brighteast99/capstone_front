@@ -1,6 +1,6 @@
 <template>
   <div>
-    <v-container class="header" fluid>
+    <v-container class="header" fluid :style="{ height: navHeight + 'px' }">
       <v-defaults-provider :defaults="defaults">
         <v-row
           class="mx-auto align-center"
@@ -140,6 +140,7 @@
                       :to="{
                         name: item.routeName,
                         params: { userId: currentUser.id },
+                        query: item.query,
                       }"
                       :active="false"
                     >
@@ -163,7 +164,12 @@
 
     <!-- Navigation menu -->
     <v-slide-y-transition>
-      <v-container v-if="menuMVs.boards.value" class="boards-list py-1" fluid>
+      <v-container
+        v-if="menuMVs.boards.value"
+        class="boards-list py-1"
+        fluid
+        :style="{ top: navHeight + 'px' }"
+      >
         <v-row
           v-click-outside="{
             handler: () => (menuMVs.boards.value = false),
@@ -191,8 +197,13 @@
                     v-for="board in boards"
                     :key="board"
                     :active="
+                      router.currentRoute.value.fullPath.startsWith(
+                        `/boards/${board.id}`
+                      )
+                    "
+                    :disabled="
                       router.currentRoute.value.fullPath ==
-                      `/boards/${board.id}/threads`
+                      `/boards/${board.id}`
                     "
                     class="mb-1"
                     color="primary_lighter"
@@ -243,15 +254,14 @@
 import CustomBtn from "@/components/CustomBtn.vue";
 import LogoGroup from "@/components/LogoGroup.vue";
 
-import { ref, reactive, computed, watch } from "vue";
+import { ref, reactive, computed, onBeforeMount, watch } from "vue";
 import { useElementSize, useScroll, toRefs } from "@vueuse/core";
-import { useSystemStore, useModalStore } from "@/store";
 import { storeToRefs } from "pinia";
+import { useSystemStore, useModalStore } from "@/store";
 import { modalResponses, modalActions } from "@/store/modal.store";
 import router, { pages } from "@/router";
 import { createToggle } from "@/modules/utility";
-import { onBeforeMount } from "vue";
-import { API, useAPI } from "@/modules/Services/API";
+import { API, useAPI, parseResponse } from "@/modules/Services/API";
 import { constructQuery } from "@/modules/Services/queryBuilder";
 
 // Component
@@ -278,7 +288,7 @@ const defaults = {
 
 // Pinia Storage
 const systemStore = useSystemStore();
-const { loggedIn, currentUser } = storeToRefs(systemStore);
+const { loggedIn, currentUser, navHeight } = storeToRefs(systemStore);
 const modalStore = useModalStore();
 
 // Data
@@ -300,13 +310,15 @@ const items = [
       title: "작성글 목록",
       value: 2,
       appendIcon: "mdi-playlist-edit",
-      routeName: pages.UserThreads,
+      routeName: pages.UserInfo,
+      query: { tab: "recruits" },
     },
     {
       title: "관심글 목록",
       value: 3,
       appendIcon: "mdi-playlist-star",
-      routeName: pages.UserBookmarks,
+      routeName: pages.UserInfo,
+      query: { tab: "favorites" },
     },
   ],
 ];
@@ -336,18 +348,20 @@ onBeforeMount(() => {
       args: null,
       fields: ["id", "title", "board_type"],
     })
-  ).then(({ data: response }) => {
-    let specials = [];
-    let generals = [];
+  )
+    .then(parseResponse)
+    .then((response) => {
+      let specials = [];
+      let generals = [];
 
-    response.value.data[API.GetBoards].map((board) => {
-      if (board.board_type == "SPECIAL") specials.push(board);
-      else generals.push(board);
+      response[API.GetBoards].map((board) => {
+        if (board.board_type == "SPECIAL") specials.push(board);
+        else generals.push(board);
+      });
+
+      boardGroups.push(specials);
+      boardGroups.push(generals);
     });
-
-    boardGroups.push(specials);
-    boardGroups.push(generals);
-  });
 });
 
 // Methods
@@ -381,7 +395,6 @@ const logout = () => {
 
 .boards-list {
   position: fixed;
-  top: 72px;
   background-color: rgba(0, 0, 0, 0.8);
   z-index: 1;
 }

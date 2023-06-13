@@ -46,7 +46,7 @@
 
 <script setup>
 import { reactive, ref, computed, defineEmits } from "vue";
-import { API, useAPI } from "@/modules/Services/API";
+import { API, useAPI, parseResponse } from "@/modules/Services/API";
 import { constructQuery } from "@/modules/Services/queryBuilder";
 import { validEmail } from "@/modules/validator";
 import { useModalStore } from "@/store";
@@ -82,8 +82,9 @@ const findUser = () => {
       },
     })
   )
-    .then(({ data: response }) => {
-      my_id.value = response.value.data[API.SearchUserForMyID];
+    .then(parseResponse)
+    .then((response) => {
+      my_id.value = response[API.SearchUserForMyID];
 
       if (!my_id.value)
         modalStore.openModal(

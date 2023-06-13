@@ -2,8 +2,9 @@
   <div class="d-flex align-center" style="font-size: 1em">
     <v-avatar
       class="profile"
+      :class="{ disabled: props.disabled }"
       :size="props.small ? 30 : 40"
-      @click="router.push(routeTo)"
+      @click="if (!props.disabled) router.push(routeTo);"
     >
       <v-icon
         icon="mdi-account-circle"
@@ -12,6 +13,7 @@
       >
       </v-icon>
     </v-avatar>
+
     <div
       v-if="!props.disabled"
       :class="props.small ? 'info-small' : 'info-normal'"
@@ -26,7 +28,7 @@
         {{ props.writer?.name }}
       </custom-btn>
       <div class="d-flex align-center">
-        <p class="pl-2">{{ date }}</p>
+        <p class="pl-2">{{ props.date }}</p>
         <span v-if="props.views" class="px-2 text-disabled">•</span>
         <v-icon
           v-if="props.views"
@@ -37,7 +39,7 @@
         <span class="text-disabled pl-1">{{ props.views }}</span>
       </div>
     </div>
-    <p v-else class="text-disabled pl-2" style="font-size: 0.8em">삭제됨</p>
+    <p v-else class="text-disabled pl-2" style="font-size: 0.8em">알 수 없음</p>
   </div>
 </template>
 
@@ -72,16 +74,16 @@ const props = defineProps({
 </script>
 
 <style scoped>
-.profile {
+.profile:not(.disabled) {
   cursor: pointer;
   transition: all 0.2s;
 }
 
-.profile:hover {
+.profile:hover:not(.disabled) {
   box-shadow: 0 0 0 4px lightgray;
 }
 
-.profile:active {
+.profile:active:not(.disabled) {
   box-shadow: 0 0 0 2px rgb(168, 168, 168);
   transition: all 0.1s;
 }

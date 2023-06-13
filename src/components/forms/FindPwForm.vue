@@ -180,7 +180,7 @@ import {
 } from "@/modules/validator";
 import { useModalStore } from "@/store";
 import { modalPresets } from "@/store/modal.store";
-import { API, useAPI } from "@/modules/Services/API";
+import { API, parseResponse, useAPI } from "@/modules/Services/API";
 import { constructQuery } from "@/modules/Services/queryBuilder";
 import router, { pages } from "@/router";
 import { useStepper, whenever } from "@vueuse/core";
@@ -259,8 +259,9 @@ const findUser = () => {
       fields: "id",
     })
   )
-    .then(({ data: response }) => {
-      id.value = Number(response.value.data[API.SearchUserForPW]?.id);
+    .then(parseResponse)
+    .then((response) => {
+      id.value = Number(response[API.SearchUserForPW]?.id);
 
       if (!id.value)
         modalStore.openModal("일치하는 회원 정보가 없습니다.", null, {
@@ -281,8 +282,9 @@ const modifyPW = () => {
       },
     })
   )
-    .then(({ data: response }) => {
-      if (!response.value.data[API.ModifyPassword]) throw new Error();
+    .then(parseResponse)
+    .then((response) => {
+      if (!response[API.ModifyPassword]) throw new Error();
       else goToNext();
     })
     .catch(modalStore.showErrorMessage);

@@ -2,17 +2,16 @@
   <v-card class="card">
     <v-card-title class="pa-5 pt-10 pb-0 d-flex align-center position-relative">
       <custom-dropdown
-        class="select-board mt-n5 mb-4"
+        class="select-board"
         v-model="threadData.board"
         :items="boardList"
         item-value="id"
-        style="width: 20%; flex: 0.2 0"
       >
       </custom-dropdown>
       <v-text-field
-        class="title mt-n7 mb-4"
+        class="title"
         v-model="threadData.title"
-        placeholder="글 제목(30자 이내)"
+        placeholder="제목 (30자 이내)"
         variant="underlined"
         color="primary"
         autofocus
@@ -24,8 +23,8 @@
         "
       ></v-text-field>
       <span
-        class="counter"
-        :class="validTitle ? 'text-disabled' : 'text-error'"
+        class="counter text-disabled"
+        :class="{ 'text-error': displayValidity && !validTitle }"
       >
         {{ `${threadData.title.length} / 30` }}
       </span>
@@ -33,6 +32,13 @@
 
     <v-card-text class="py-0">
       <text-editor v-model="threadData.content" :edit-mode="true" />
+
+      <v-divider class="my-3"></v-divider>
+
+      <recruitment-editor
+        v-model="threadData.recruits"
+        :existing="threadData_backup.recruits.length > 0"
+      ></recruitment-editor>
     </v-card-text>
 
     <v-card-actions class="pb-5">
@@ -44,20 +50,23 @@
         variant="flat"
         color="primary"
         :loading="submitting"
-        @click="thread"
+        @click="submit"
       >
         {{ props.threadId ? "수정" : "등록" }}
       </v-btn>
     </v-card-actions>
   </v-card>
+  {{ threadData.recruits }}
 </template>
 
 <script setup>
 import CustomDropdown from "@/components/CustomDropdown.vue";
 import TextEditor from "@/components/TextEditor.vue";
+import recruitmentEditor from "@/components/RecruitmentEditor.vue";
 import CustomBtn from "@/components/CustomBtn.vue";
 
 import {
+  ref,
   reactive,
   computed,
   defineProps,
@@ -75,7 +84,7 @@ import {
 import { API, apiRequest, parseResponse, useAPI } from "@/modules/Services/API";
 import { constructQuery } from "@/modules/Services/queryBuilder";
 import { escapeString, extractText, parseJSON } from "@/modules/utility";
-import { useCloned } from "@vueuse/core";
+import { useCloned, watchOnce } from "@vueuse/core";
 
 // Pinia storage
 const systemStore = useSystemStore();
@@ -94,12 +103,13 @@ const threadData = reactive({
   board: null,
   title: "",
   content: null,
-  occupation: [],
+  recruits: [],
 });
 const { cloned: threadData_backup, sync: backup } = useCloned(threadData);
 const validTitle = computed(
   () => (threadData.title.length > 0 && threadData.title.length <= 30) || ""
 );
+const displayValidity = ref(false);
 
 // Props
 const props = defineProps({
@@ -107,7 +117,7 @@ const props = defineProps({
   threadId: String,
 });
 
-// Fetch data before route enter
+// Hooks
 onBeforeMount(async () => {
   if (!systemStore.loggedIn) {
     const response = await modalStore.showNeedLoginMessage();
@@ -126,8 +136,6 @@ onBeforeMount(async () => {
   window.addEventListener("beforeunload", beforeunloadEvent);
   // window.addEventListener("unload", unloadEvent);
 });
-
-// Navigation guards
 onBeforeUnmount(() => {
   window.removeEventListener("beforeunload", beforeunloadEvent);
   // window.removeEventListener("unload", unloadEvent);
@@ -177,23 +185,37 @@ onBeforeRouteUpdate(async (to, from, next) => {
   return next(response === modalResponses.Yes);
 });
 
+// Watch
+watchOnce(validTitle, () => (displayValidity.value = true));
+
 // Methods
 const fetchData = () => {
   const api = new apiRequest();
 
+  // /게시판 목록
   api.push(API.GetBoards, null, ["id", "title", "board_type"]);
 
+  // 게시판 권한 확인용
   if (isNewThread.value)
     api.push(API.GetBoard, { id: Number(props.boardId) }, "board_type");
+  // 기존 게시글 정보
   else
-    api.push(API.GetThread, { id: Number(props.threadId) }, [
-      { user: "id" },
-      { board: "id" },
-      "is_deleted",
-      "title",
-      "content",
-      "occupation",
-    ]);
+    api
+      .push(API.GetThread, { id: Number(props.threadId) }, [
+        { user: "id" },
+        { board: "id" },
+        "is_deleted",
+        "title",
+        "content",
+      ])
+      .push(API.GetRecruitments, { thread_id: Number(props.threadId) }, [
+        "id",
+        { occupation: ["id", "name"] },
+        "current_cnt",
+        "max_cnt",
+        "is_closed",
+        "is_stopped",
+      ]);
 
   api
     .send()
@@ -207,6 +229,7 @@ const fetchData = () => {
           ...boards.filter((board) => board.board_type != "SPECIAL")
         );
 
+      // Guards
       if (isNewThread.value) {
         const boardData = response[API.GetBoard];
         if (!boardData) throw "noSuchBoard";
@@ -234,9 +257,10 @@ const fetchData = () => {
         )
           throw "noPermission";
 
+        // Fetch data
         loadedThread.board = loadedThread.board.id;
-        loadedThread.occupation = loadedThread.occupation.split(", ");
         loadedThread.content = parseJSON(loadedThread.content);
+        loadedThread.recruits = parseJSON(response[API.GetRecruitments]);
         Object.assign(threadData, loadedThread);
       }
       backup();
@@ -309,7 +333,7 @@ const cancel = async () => {
   else router.back();
 };
 const { isLoading: submitting, execute } = useAPI();
-const thread = async () => {
+const submit = async () => {
   const operation = isNewThread.value ? "등록" : "수정";
 
   if (threadData.title.length == 0)
@@ -327,36 +351,161 @@ const thread = async () => {
       actions: modalPresets.OK,
     });
 
-  const response = await modalStore.openModal(
-    `게시글을 ${operation}하시겠습니까?`,
-    null,
-    {
-      actions: [{ label: operation }, modalActions.Cancel],
-    }
-  );
-  if (response === modalResponses.Cancel) return;
+  let message;
+  if (
+    !threadData.recruits.length ||
+    threadData.recruits.every((recruit) => recruit.excluded)
+  )
+    message = `모집 직군을 명시하지 않고 ${operation}을 마치시겠습니까?`;
+  else message = `게시글을 ${operation}하시겠습니까?`;
+
+  const response = await modalStore.openModal(message, null, {
+    actions: [{ label: operation }, modalActions.No],
+  });
+  if (response === modalResponses.No) return;
 
   let error = false;
   let newThreadId;
   if (isEdited.value) {
+    // Submit thread data
     const apiName = isNewThread.value ? API.CreateThread : API.EditThread;
 
     let data = {
       board_id: Number(threadData.board),
       title: escapeString(threadData.title),
       content: escapeString(JSON.stringify(threadData.content)),
-      occupation: threadData.occupation,
+      occupation: threadData.recruits,
     };
     if (isNewThread.value) data.writer_id = Number(systemStore.currentUser.id);
     else data.id = Number(props.threadId);
 
     await execute(constructQuery({ name: apiName, args: data, fields: "id" }))
-      .then(
-        ({ data: response }) => (newThreadId = response.value.data[apiName].id)
-      )
+      .then(parseResponse)
+      .then((response) => (newThreadId = response[apiName].id))
       .catch(async () => {
         error = true;
         await modalStore.showErrorMessage();
+      });
+
+    // Submit recruitment data
+    const toCreate = threadData.recruits
+      .filter((recruit) => recruit.id == null)
+      .map((recruit) => {
+        return { id: recruit.occupation.id, count: recruit.max_cnt };
+      });
+    const toWithdraw = threadData.recruits
+      .filter((recruit) => recruit.excluded)
+      .map((recruit) => recruit.id);
+    const toRevert = threadData.recruits
+      .filter((recruit) => recruit.revert)
+      .map((recruit) => recruit.id);
+    const toUpdate = threadData.recruits
+      .filter(
+        (recruit) =>
+          recruit.id != null &&
+          !(recruit.excluded || (recruit.is_stopped && !recruit.revert))
+      )
+      .map((recruit) => {
+        return { id: recruit.occupation.id, count: recruit.max_cnt };
+      });
+    const toCloseManually = threadData.recruits
+      .filter(
+        (recruit) =>
+          recruit.max_cnt > recruit.current_cnt &&
+          recruit.is_closed &&
+          !(recruit?.excluded || (recruit.is_stopped && !recruit?.revert))
+      )
+      .map((recruit) => recruit.id);
+    console.log(toCloseManually);
+
+    let queries = [];
+
+    if (toWithdraw.length)
+      for (const id of toWithdraw)
+        queries.push({
+          name: API.WithdrawRecruitment,
+          args: {
+            recruitment_id: Number(id),
+          },
+        });
+    if (toRevert.length)
+      for (const id of toRevert)
+        queries.push({
+          name: API.RevertWithdrawnRecruitment,
+          args: { id: Number(id) },
+        });
+    if (toUpdate.length)
+      queries.push({
+        name: API.UpdateRecruitments,
+        args: {
+          thread_id: Number(newThreadId ?? props.threadId),
+          inputs: JSON.stringify(JSON.stringify(toUpdate)),
+        },
+      });
+    if (toCreate.length)
+      queries.push({
+        name: API.CreateRecruitments,
+        args: {
+          thread_id: Number(newThreadId ?? props.threadId),
+          inputs: JSON.stringify(JSON.stringify(toCreate)),
+        },
+      });
+    if (toCloseManually.length)
+      for (const id of toCloseManually) {
+        queries.push({
+          name: API.CloseRecruitment,
+          args: { id: Number(id) },
+        });
+      }
+    console.log(toCloseManually);
+
+    console.log(constructQuery(queries));
+
+    await execute(constructQuery(queries))
+      .then(parseResponse)
+      .then((response) => {
+        console.log("parsing response");
+        console.log(response);
+
+        if (toCreate.length && !response[API.CreateRecruitments])
+          throw new Error();
+
+        if (toWithdraw.length) {
+          if (toWithdraw.length == 1 && !response[API.WithdrawRecruitment])
+            throw new Error();
+          if (
+            toRevert.length > 1 &&
+            response[API.WithdrawRecruitment]?.some((value) => !value)
+          )
+            throw new Error();
+        }
+
+        if (toRevert.length) {
+          if (toRevert.length == 1 && !response[API.RevertWithdrawnRecruitment])
+            throw new Error();
+          if (
+            toRevert.length > 1 &&
+            response[API.RevertWithdrawnRecruitment]?.some((value) => !value)
+          )
+            throw new Error();
+        }
+
+        if (toUpdate.length && !response[API.UpdateRecruitments])
+          throw new Error();
+
+        if (toCloseManually.length) {
+          if (toCloseManually.length == 1 && !response[API.CloseRecruitment])
+            throw new Error();
+          if (
+            toCloseManually.length > 1 &&
+            response[API.CloseRecruitment]?.some((value) => !value)
+          )
+            throw new Error();
+        }
+      })
+      .catch((err) => {
+        error = true;
+        modalStore.showErrorMessage(err || "모집 직군을 설정하지 못했습니다.");
       });
   }
 
@@ -390,10 +539,14 @@ const beforeunloadEvent = (event) => {
   min-width: fit-content;
 }
 .select-board {
-  flex: 0 0;
+  flex: 0.2 0;
+  margin-top: -20px;
+  margin-bottom: 16px;
 }
 .title {
   flex: 0.8 1;
+  margin-top: -26px;
+  margin-bottom: 16px;
 }
 .counter {
   position: absolute;

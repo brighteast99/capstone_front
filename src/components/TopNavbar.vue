@@ -197,8 +197,13 @@
                     v-for="board in boards"
                     :key="board"
                     :active="
+                      router.currentRoute.value.fullPath.startsWith(
+                        `/boards/${board.id}`
+                      )
+                    "
+                    :disabled="
                       router.currentRoute.value.fullPath ==
-                      `/boards/${board.id}/threads`
+                      `/boards/${board.id}`
                     "
                     class="mb-1"
                     color="primary_lighter"
@@ -249,15 +254,14 @@
 import CustomBtn from "@/components/CustomBtn.vue";
 import LogoGroup from "@/components/LogoGroup.vue";
 
-import { ref, reactive, computed, watch } from "vue";
+import { ref, reactive, computed, onBeforeMount, watch } from "vue";
 import { useElementSize, useScroll, toRefs } from "@vueuse/core";
-import { useSystemStore, useModalStore } from "@/store";
 import { storeToRefs } from "pinia";
+import { useSystemStore, useModalStore } from "@/store";
 import { modalResponses, modalActions } from "@/store/modal.store";
 import router, { pages } from "@/router";
 import { createToggle } from "@/modules/utility";
-import { onBeforeMount } from "vue";
-import { API, useAPI } from "@/modules/Services/API";
+import { API, useAPI, parseResponse } from "@/modules/Services/API";
 import { constructQuery } from "@/modules/Services/queryBuilder";
 
 // Component
@@ -344,18 +348,20 @@ onBeforeMount(() => {
       args: null,
       fields: ["id", "title", "board_type"],
     })
-  ).then(({ data: response }) => {
-    let specials = [];
-    let generals = [];
+  )
+    .then(parseResponse)
+    .then((response) => {
+      let specials = [];
+      let generals = [];
 
-    response.value.data[API.GetBoards].map((board) => {
-      if (board.board_type == "SPECIAL") specials.push(board);
-      else generals.push(board);
+      response[API.GetBoards].map((board) => {
+        if (board.board_type == "SPECIAL") specials.push(board);
+        else generals.push(board);
+      });
+
+      boardGroups.push(specials);
+      boardGroups.push(generals);
     });
-
-    boardGroups.push(specials);
-    boardGroups.push(generals);
-  });
 });
 
 // Methods

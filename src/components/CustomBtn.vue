@@ -1,19 +1,31 @@
 <template>
-  <div class="wrapper" v-element-hover="toggleHover" @click="route">
+  <div
+    class="wrapper"
+    :class="{ disabled: props.disabled }"
+    v-element-hover="toggleHover"
+    @click="route"
+  >
     <div class="container">
       <div
-        :style="{ color: fontColor, marginRight: 'auto', whiteSpace: 'nowrap' }"
+        style="margin-right: auto; white-space: nowrap; align-items: center"
+        :style="{ color: fontColor }"
       >
-        <slot name="prepend"></slot>
+        <slot name="prepend">
+          <v-icon v-if="props.prependIcon" :icon="props.prependIcon"></v-icon>
+        </slot>
       </div>
+
       <button class="px-0" :style="style">
         <slot></slot>
       </button>
 
       <div
-        :style="{ color: fontColor, marginLeft: 'auto', whiteSpace: 'nowrap' }"
+        style="margin-left: auto; white-space: nowrap; align-items: center"
+        :style="{ color: fontColor }"
       >
-        <slot name="append"></slot>
+        <slot name="append">
+          <v-icon v-if="props.appendIcon" :icon="props.appendIcon"></v-icon>
+        </slot>
       </div>
     </div>
   </div>
@@ -32,7 +44,9 @@ const fontColor = computed(() => {
   const activeColor = themes.customTheme.colors[props.color] ?? props.color;
   const defaultColor =
     themes.customTheme.colors[props.defaultColor] ?? props.defaultColor;
-  return isHover.value || props.active ? activeColor : defaultColor;
+  return (!props.disabled && isHover.value) || props.active
+    ? activeColor
+    : defaultColor;
 });
 const fontSize = computed(() =>
   typeof props.size == "number" ? props.size + "px" : props.size
@@ -70,9 +84,22 @@ const props = defineProps({
     Type: Boolean,
     default: false,
   },
+  disabled: {
+    Type: Boolean,
+    default: false,
+  },
+  prependIcon: {
+    Type: String,
+    default: null,
+  },
+  appendIcon: {
+    Type: String,
+    default: null,
+  },
 });
 
-const route = () => {
+const route = (event) => {
+  if (props.disabled) return event.stopImmediatePropagation();
   if (!props.to) return;
 
   router.push(props.to);
@@ -94,10 +121,22 @@ button {
   padding: 0 0.5em 0 0.5em;
 }
 
-.wrapper:hover {
+.wrapper:not(.disabled) {
+  cursor: pointer;
+}
+
+.disabled {
+  filter: brightness(0.7);
+}
+
+.wrapper.disabled button {
+  cursor: default;
+}
+
+.wrapper:hover:not(.disabled) {
   filter: brightness(1.2);
 }
-.wrapper:active {
+.wrapper:active:not(.disabled) {
   transition: all 0s;
   filter: brightness(0.8);
 }

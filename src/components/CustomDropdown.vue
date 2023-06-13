@@ -185,7 +185,7 @@ const emits = defineEmits([
 
 // Watch
 watchEffect(() => {
-  selectedItem.value = props.items.find((item) => {
+  selectedItem.value = props.items?.find((item) => {
     return props.modelValue == (item[props.itemValue] ?? item);
   });
 });

@@ -13,6 +13,7 @@
       >
       </v-icon>
     </v-avatar>
+
     <div
       v-if="!props.disabled"
       :class="props.small ? 'info-small' : 'info-normal'"
@@ -27,7 +28,7 @@
         {{ props.writer?.name }}
       </custom-btn>
       <div class="d-flex align-center">
-        <p class="pl-2">{{ date }}</p>
+        <p class="pl-2">{{ props.date }}</p>
         <span v-if="props.views" class="px-2 text-disabled">•</span>
         <v-icon
           v-if="props.views"

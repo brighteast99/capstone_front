@@ -1,20 +1,20 @@
 <template>
-  <v-card class="profile-card">
+  <v-card class="profile-card" :loading="loadingUserData">
     <dot-menu v-if="isMyInfo" size="small" @click="editInfo">
       <custom-btn>프로필 수정</custom-btn>
     </dot-menu>
     <v-container>
       <v-row>
-        <v-col cols="auto">
+        <v-col cols="auto" style="min-width: fit-content">
           <v-avatar size="128">
             <v-icon icon="mdi-account-circle" size="128" color="primary">
             </v-icon>
           </v-avatar>
         </v-col>
-        <v-col>
+        <v-col style="min-width: fit-content">
           <h1 class="userinfo-name">{{ userInfo.name }}</h1>
           <p class="userinfo-email">{{ userInfo.email }}</p>
-          <p class="userinfo-date">{{ userInfo.date_created }}</p>
+          <p class="userinfo-date">{{ registerDate }}</p>
         </v-col>
       </v-row>
     </v-container>
@@ -29,82 +29,61 @@
     <v-divider></v-divider>
     <v-window v-model="tab">
       <v-window-item :value="tabs.portfolio">
-        <div
-          class="text-h6 text-disabled d-flex justify-center align-center py-7"
-          style="height: 200px"
-        >
+        <error-block height="200">
           아직 포트폴리오를 등록하지 않았습니다.
-        </div>
+        </error-block>
       </v-window-item>
       <v-window-item :value="tabs.recruits">
-        <div
-          v-if="loadingUsersThreads | failedLoadingUsersThreads"
-          class="text-h6 text-disabled d-flex justify-center align-center text-center"
-          style="height: 200px"
+        <error-block
+          v-if="loadingUsersThreads || failedLoadingUsersThreads"
+          :loading="loadingUsersThreads"
+          height="200"
         >
-          <span v-if="failedLoadingUsersThreads">
-            목록을 불러오는 데 실패했습니다.<br />
-            나중에 다시 시도하거나 관리자에게 문의 바랍니다.
-          </span>
-          <v-icon v-else class="mdi-spin" icon="mdi-loading"> </v-icon>
+          목록을 불러오지 못했습니다.<br />
+          나중에 다시 시도하거나 관리자에게 문의 바랍니다.
+        </error-block>
+        <div v-else-if="usersThreads.length" class="thread-list">
+          <div v-for="thread in usersThreads" :key="thread">
+            <thread-peeker :thread="thread"></thread-peeker>
+            <v-divider class="mx-1 my-1"></v-divider>
+          </div>
         </div>
-        <div
-          v-else-if="usersThreads.length"
-          v-for="thread in usersThreads"
-          :key="thread"
-        >
-          <thread-peeker :thread="thread"></thread-peeker>
-          <v-divider class="mx-1 my-1"></v-divider>
-        </div>
-        <div
-          v-else
-          class="text-h6 text-disabled d-flex justify-center align-center text-center"
-          style="height: 200px"
-        >
+        <error-block v-else height="200">
           아직 진행한 프로젝트가 없습니다.
-        </div>
+        </error-block>
       </v-window-item>
       <v-window-item :value="tabs.participations">
-        <div
-          class="text-h6 text-disabled d-flex justify-center align-center text-center"
-          style="height: 200px"
-        >
+        <error-block height="200">
           아직 참여한 프로젝트가 없습니다.
-        </div>
+        </error-block>
       </v-window-item>
       <v-window-item :value="tabs.favorites">
-        <div
-          v-if="loadingFavoriteThreads | failedLoadingFavoriteThreads"
-          class="text-h6 text-disabled d-flex justify-center align-center text-center"
-          style="height: 200px"
+        <error-block
+          v-if="loadingFavoriteThreads || failedLoadingFavoriteThreads"
+          :loading="loadingFavoriteThreads"
+          height="200"
         >
-          <span v-if="failedLoadingFavoriteThreads">
-            목록을 불러오는 데 실패했습니다.<br />
-            나중에 다시 시도하거나 관리자에게 문의 바랍니다.
-          </span>
-          <v-icon class="mdi-spin" icon="mdi-loading"></v-icon>
+          목록을 불러오지 못했습니다.<br />
+          나중에 다시 시도하거나 관리자에게 문의 바랍니다.
+        </error-block>
+        <div v-else-if="favoriteThreads.length" class="thread-list">
+          <div
+            v-for="(thread, i) in favoriteThreads"
+            :key="thread"
+            style="position: relative"
+          >
+            <dot-menu v-if="isMyInfo">
+              <custom-btn color="error" @click="cancelFavorite(i)">
+                관심 해제
+              </custom-btn>
+            </dot-menu>
+            <thread-peeker :thread="thread"> </thread-peeker>
+            <v-divider class="mx-1 my-1"></v-divider>
+          </div>
         </div>
-        <div
-          v-else-if="favoriteThreads.length"
-          v-for="(thread, i) in favoriteThreads"
-          :key="thread"
-          style="position: relative"
-        >
-          <dot-menu v-if="isMyInfo">
-            <custom-btn color="error" @click="cancelFavorite(i)">
-              관심 해제
-            </custom-btn>
-          </dot-menu>
-          <thread-peeker :thread="thread"> </thread-peeker>
-          <v-divider class="mx-1 my-1"></v-divider>
-        </div>
-        <div
-          v-else
-          class="text-h6 text-disabled d-flex justify-center align-center py-7"
-          style="height: 200px"
-        >
+        <error-block v-else height="200">
           아직 관심 등록한 프로젝트가 없습니다.
-        </div>
+        </error-block>
       </v-window-item>
     </v-window>
   </v-card>
@@ -114,6 +93,7 @@
 import CustomBtn from "@/components/CustomBtn.vue";
 import DotMenu from "@/components/DotMenu.vue";
 import ThreadPeeker from "@/components/ThreadPeeker.vue";
+import ErrorBlock from "@/components/ErrorBlock.vue";
 
 import {
   reactive,
@@ -123,26 +103,32 @@ import {
   watch,
   onBeforeMount,
 } from "vue";
-import { onBeforeRouteUpdate } from "vue-router";
 import { apiRequest, API, parseResponse, useAPI } from "@/modules/Services/API";
 import router, { safeBack } from "@/router";
 import { useModalStore, useSystemStore } from "@/store";
 import { formatDateRelative } from "@/modules/utility";
 import { constructQuery } from "@/modules/Services/queryBuilder";
-import { pages } from "@/router";
 
 // Pinia storage
 const systemStore = useSystemStore();
 const modalStore = useModalStore();
 
 // Data
-const userId = computed(() => router.currentRoute.value.params.userId);
-const userInfo = reactive({
-  id: null,
-  name: "",
-  email: "",
-  date_created: "",
-});
+const userId = computed(
+  () => router.currentRoute.value.params.userId ?? props.userId
+);
+const userInfo = computed(
+  () =>
+    userDataResponse.value?.data[API.GetUser] || {
+      id: null,
+      name: "User",
+      email: "email@email.com",
+      date_created: new Date(),
+    }
+);
+const registerDate = computed(
+  () => `${formatDateRelative(userInfo.value.date_created)} 가입`
+);
 const isMyInfo = computed(() => props.userId == systemStore.currentUser.id);
 const tabs = {
   portfolio: "portfolio",
@@ -152,7 +138,13 @@ const tabs = {
 };
 Object.freeze(tabs);
 const tab = ref(tabs.portfolio);
-const usersThreads = reactive([]);
+const usersThreads = computed(() => {
+  return (
+    usersThreadsResponse.value?.data[API.GetUser].thread_set.filter(
+      (thread) => !thread.is_deleted
+    ) || []
+  );
+});
 const favoriteThreads = reactive([]);
 
 // Props
@@ -162,11 +154,6 @@ const props = defineProps({
 
 // Watches
 watch(tab, (value) => {
-  router.replace({
-    name: pages.UserInfo,
-    params: { userId: userId.value },
-    query: { tab: value },
-  });
   switch (value) {
     case tabs.portfolio: {
       break;
@@ -190,8 +177,6 @@ watch(tab, (value) => {
 watch(
   () => router.currentRoute.value.query.tab,
   (value) => {
-    if (router.currentRoute.value.name != pages.UserInfo) return;
-
     tab.value = value ?? tabs.portfolio;
   },
   { immediate: true }
@@ -199,9 +184,16 @@ watch(
 watch(
   () => router.currentRoute.value.params.userId,
   () => {
-    if (router.currentRoute.value.name != pages.UserInfo) return;
-
     fetchUserData();
+    tab.value = tabs.portfolio;
+  },
+  { immedaite: true }
+);
+watch(
+  () => props.userId,
+  () => {
+    fetchUserData();
+    tab.value = tabs.portfolio;
   },
   { immedaite: true }
 );
@@ -210,42 +202,27 @@ watch(
 onBeforeMount(() => {
   fetchUserData();
 });
-onBeforeRouteUpdate((to, from, next) => {
-  if (!to.query.tab)
-    return next({
-      name: to.name,
-      params: to.params,
-      query: { tab: tabs.portfolio },
-    });
-  return next(true);
-});
 
 // Methods
+const {
+  isLoading: loadingUserData,
+  data: userDataResponse,
+  execute: _fetchUserData,
+} = useAPI();
 const fetchUserData = () => {
-  Object.assign(userInfo, {
-    id: null,
-    name: "",
-    email: "",
-    date_created: "",
-  });
   loadedUsersThreads.value = false;
   loadedFavoriteThreads.value = false;
 
-  new apiRequest()
-    .execute(API.GetUser, { id: Number(userId.value) }, [
-      "id",
-      "name",
-      "email",
-      "date_created",
-    ])
+  _fetchUserData(
+    constructQuery({
+      name: API.GetUser,
+      args: { id: Number(userId.value) },
+      fields: ["id", "name", "email", "date_created"],
+    })
+  )
     .then(parseResponse)
     .then((response) => {
       if (!response[API.GetUser]) throw new Error("유저를 찾을 수 없습니다.");
-
-      Object.assign(userInfo, response[API.GetUser]);
-      userInfo.date_created = `${formatDateRelative(
-        userInfo.date_created
-      )} 가입`;
     })
     .catch((err) => modalStore.showErrorMessage(err).then(() => safeBack()));
 };
@@ -253,10 +230,18 @@ const {
   isLoading: loadingUsersThreads,
   error: failedLoadingUsersThreads,
   isFinished: loadedUsersThreads,
+  data: usersThreadsResponse,
   execute: _fetchUsersThreads,
-} = useAPI();
+} = useAPI({
+  onSuccess: ({ data: response }) => {
+    console.log(response);
+    if (!response[API.GetUser]) {
+      failedLoadingUsersThreads.value = true;
+      return;
+    }
+  },
+});
 const fetchUsersThreads = () => {
-  usersThreads.splice(0, usersThreads.length);
   _fetchUsersThreads(
     constructQuery({
       name: API.GetUser,
@@ -273,19 +258,13 @@ const fetchUsersThreads = () => {
             "is_deleted",
             "views",
             "likes",
+            "favorites",
             { commentforthread_set: ["is_deleted", { replies: "is_deleted" }] },
           ],
         },
       ],
     })
-  ).then(({ data: response }) => {
-    if (!response.value.data[API.GetUser]) {
-      failedLoadingUsersThreads.value = true;
-      return;
-    }
-    const threadsData = response.value.data[API.GetUser].thread_set;
-    usersThreads.push(...threadsData.filter((thread) => !thread.is_deleted));
-  });
+  );
 };
 
 const {
@@ -293,7 +272,10 @@ const {
   error: failedLoadingFavoriteThreads,
   isFinished: loadedFavoriteThreads,
   execute: _fetchFavoriteThreads,
-} = useAPI();
+} = useAPI({
+  onSuccess: ({ data: response }) =>
+    favoriteThreads.push(...response[API.GetFavorites]),
+});
 const fetchFavoriteThreads = () => {
   favoriteThreads.splice(0, favoriteThreads.length);
   _fetchFavoriteThreads(
@@ -310,11 +292,10 @@ const fetchFavoriteThreads = () => {
         "is_deleted",
         "views",
         "likes",
+        "favorites",
         { commentforthread_set: ["is_deleted", { replies: "is_deleted" }] },
       ],
     })
-  ).then(({ data: response }) =>
-    favoriteThreads.push(...response.value.data[API.GetFavorites])
   );
 };
 
@@ -363,5 +344,10 @@ const cancelFavorite = (idx) => {
 
 .userinfo-date {
   color: gray;
+}
+
+.thread-list {
+  max-height: 50dvh;
+  overflow: scroll;
 }
 </style>

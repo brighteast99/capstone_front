@@ -18,25 +18,17 @@
     <v-divider class="mx-3"> </v-divider>
 
     <v-card-text class="list-area pt-2">
-      <div
-        v-if="isLoading | error"
-        class="d-flex flex-column justify-center align-center"
-        style="height: 40dvh"
+      <error-block
+        v-if="isLoading || error"
+        :loading="isLoading"
+        height="50dvh"
       >
-        <span v-if="error">
-          게시글을 불러오는 데 실패했습니다. <br />
-          나중에 다시 시도하거나 관리자에게 문의 바랍니다.
-        </span>
-        <v-icon v-else class="mdi-spin" icon="mdi-loading" size="50"> </v-icon>
-      </div>
-      <div
-        v-else-if="!threads"
-        class="d-flex flex-column justify-center align-center"
-        style="height: 40dvh"
-      >
-        <v-icon icon="mdi-alert-outline" color="error" size="128"> </v-icon>
-        <p style="font-size: 24px">아직 등록된 글이 없습니다.</p>
-      </div>
+        게시글을 불러오지 못했습니다. <br />
+        나중에 다시 시도하거나 관리자에게 문의 바랍니다.
+      </error-block>
+      <error-block v-else-if="!threads?.length" height="50dvh">
+        아직 등록된 글이 없습니다.
+      </error-block>
       <div v-else v-for="thread in threads" :key="thread">
         <thread-peeker :thread="thread"></thread-peeker>
         <v-divider class="mx-1 my-1"></v-divider>
@@ -61,8 +53,9 @@
 <script setup>
 import CustomBtn from "@/components/CustomBtn.vue";
 import ThreadPeeker from "@/components/ThreadPeeker.vue";
+import ErrorBlock from "@/components/ErrorBlock.vue";
 
-import { reactive, defineProps, watch, onBeforeMount } from "vue";
+import { reactive, computed, defineProps, watch, onBeforeMount } from "vue";
 import router, { pages } from "@/router";
 import { API, apiRequest, parseResponse, useAPI } from "@/modules/Services/API";
 import { constructQuery } from "@/modules/Services/queryBuilder";
@@ -81,7 +74,11 @@ const board = reactive({
   content: "설명",
   board_type: "SPECIAL",
 });
-const threads = reactive([]);
+const threads = computed(() =>
+  threadsResponse.value?.data[API.GetBoard].thread_set.filter(
+    (thread) => !thread.is_deleted
+  )
+);
 
 // Props
 const props = defineProps({
@@ -104,7 +101,12 @@ onBeforeMount(() => {
 });
 
 // Methods
-const { isLoading, error, execute: getThreads } = useAPI();
+const {
+  isLoading,
+  error,
+  data: threadsResponse,
+  execute: getThreads,
+} = useAPI();
 const fetchBoardData = async () => {
   // Get board data
   await new apiRequest()
@@ -122,7 +124,7 @@ const fetchBoardData = async () => {
     .catch((err) => modalStore.showErrorMessage(err).then(safeBack()));
 
   // Get threads
-  threads.splice(0, threads.length);
+  // threads.splice(0, threads.length);
   getThreads(
     constructQuery({
       name: API.GetBoard,
@@ -139,15 +141,18 @@ const fetchBoardData = async () => {
             "is_deleted",
             "views",
             "likes",
+            "favorites",
             { commentforthread_set: ["is_deleted", { replies: "is_deleted" }] },
           ],
         },
       ],
     })
-  ).then(({ data: response }) => {
-    const data = response.value.data[API.GetBoard];
-    threads.push(...data.thread_set.filter((thread) => !thread.is_deleted));
-  });
+  );
+  // .then(parseResponse)
+  // .then((response) => {
+  //   const data = response[API.GetBoard];
+  //   threads.push(...data.thread_set.filter((thread) => !thread.is_deleted));
+  // });
 };
 </script>
 <style scoped>
@@ -169,15 +174,5 @@ const fetchBoardData = async () => {
 
 .list-area {
   min-height: 50dvh;
-}
-.title-text {
-  width: 100%;
-  display: block;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  overflow: hidden;
-  cursor: pointer;
-  transition: all 0.1s;
-  text-align: left;
 }
 </style>

@@ -14,7 +14,7 @@
           {{ data.title }}
         </v-card-title>
 
-        <span class="modal-content">
+        <span class="modal-content" :class="{ 'pt-2': data.title }">
           {{ data.content }}
         </span>
 
@@ -93,11 +93,12 @@ const onClickOutside = () => {
 .modal-content {
   white-space: pre;
   text-align: center;
-  padding: 2em 1em 1.5em 1em;
+  padding: 1.5em 1em 1.5em 1em;
 }
 
 .modal-actions {
-  padding: 0 3em 0 3em;
+  padding: 0 3em 1em 3em;
+  min-height: unset;
 }
 
 .modal-action {

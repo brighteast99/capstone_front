@@ -62,8 +62,8 @@ const useModalStore = defineStore("modal", () => {
       if (!validOption(options)) {
         reject("Invalid modal option");
       } else {
-        modalOptions.persistent = options.persistent ?? false;
-        modalOptions.actions = options.actions ?? modalPresets.YesNo;
+        modalOptions.persistent = options?.persistent ?? false;
+        modalOptions.actions = options?.actions ?? modalPresets.YesNo;
 
         toggleModal(true);
 

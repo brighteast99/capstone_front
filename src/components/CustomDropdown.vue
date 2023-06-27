@@ -185,7 +185,7 @@ const emits = defineEmits([
 
 // Watch
 watchEffect(() => {
-  selectedItem.value = props.items.find((item) => {
+  selectedItem.value = props.items?.find((item) => {
     return props.modelValue == (item[props.itemValue] ?? item);
   });
 });
@@ -221,7 +221,6 @@ const scrollToSelected = async () => {
   align-items: first baseline;
 }
 .prepend-icon {
-  padding-left: 4px;
   transition: all 0.1s;
 }
 .prepend-inner-icon {

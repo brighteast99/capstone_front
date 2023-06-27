@@ -98,13 +98,13 @@
 import CustomBtn from "@/components/CustomBtn.vue";
 
 import { ref, reactive } from "vue";
+import { onLongPress } from "@vueuse/core";
 import { useSystemStore, useModalStore } from "@/store";
 import { modalPresets } from "@/store/modal.store";
 import LogoGroup from "@/components/LogoGroup.vue";
 import router, { pages } from "@/router";
 import { validMyID, validPW } from "@/modules/validator";
-import { onLongPress } from "@vueuse/core";
-import { API, useAPI } from "@/modules/Services/API";
+import { API, useAPI, parseResponse } from "@/modules/Services/API";
 import { constructQuery } from "@/modules/Services/queryBuilder";
 
 const submitBtn = ref();
@@ -158,10 +158,11 @@ const login = () => {
       fields: ["id", "name", "email", "is_staff"],
     })
   )
-    .then(({ data: response }) => {
-      if (!response.value.data[API.SignIn]) loginFailed();
+    .then(parseResponse)
+    .then((response) => {
+      if (!response[API.SignIn]) loginFailed();
       else {
-        systemStore.login({ ...loginData, ...response.value.data[API.SignIn] });
+        systemStore.login({ ...loginData, ...response[API.SignIn] });
         router.push(
           router.currentRoute.value.query.redirect ?? {
             name: pages.Main,

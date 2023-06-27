@@ -361,7 +361,7 @@ import {
 import router, { pages } from "@/router";
 import { useDebounceFn } from "@vueuse/core";
 import { createToggle } from "@/modules/utility";
-import { API, useAPI } from "@/modules/Services/API";
+import { API, useAPI, parseResponse } from "@/modules/Services/API";
 import { constructQuery } from "@/modules/Services/queryBuilder";
 
 // Pinia storage
@@ -517,10 +517,10 @@ const checkIdUniqueness = useDebounceFn(() => {
       },
     })
   )
+    .then(parseResponse)
     .then(
-      ({ data: response }) =>
-        (formData.my_id.validity.unique =
-          !response.value.data[API.CheckExistingID])
+      (response) =>
+        (formData.my_id.validity.unique = !response[API.CheckExistingID])
     )
     .catch(() => (formData.my_id.validity.unique = null));
 }, 250);
@@ -539,10 +539,10 @@ const chechEmailUniqueness = useDebounceFn(() => {
       },
     })
   )
+    .then(parseResponse)
     .then(
-      ({ data: response }) =>
-        (formData.email.validity.unique =
-          !response.value.data[API.CheckExistingEmail])
+      (response) =>
+        (formData.email.validity.unique = !response[API.CheckExistingEmail])
     )
     .catch(() => (formData.email.validity.unique = null));
 }, 250);
@@ -564,8 +564,9 @@ const register = () => {
       fields: "id",
     })
   )
-    .then(({ data: response }) => {
-      if (!response.value.data[API.SignUp]) throw new Error();
+    .then(parseResponse)
+    .then((response) => {
+      if (!response[API.SignUp]) throw new Error();
       else
         modalStore
           .openModal(

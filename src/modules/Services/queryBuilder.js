@@ -71,11 +71,19 @@ export function constructQueryString(name, args, fields) {
  */
 export function constructQuery(queryData) {
   let querySet = [];
+  let queryCount = {};
 
   if (!Array.isArray(queryData)) queryData = [queryData];
 
   queryData.forEach((query) => {
-    const { name, args, fields } = query;
+    let { name, args, fields } = query;
+
+    // aliasing the query name
+    if (queryCount[name]) {
+      queryCount[name]++;
+      name = `${name}${queryCount[name]} : ${name}`;
+    } else queryCount[name] = 1;
+
     querySet.push(constructQueryString(name, args, fields));
   });
   return { data: { query: "{" + querySet.join(" ") + "}" } };

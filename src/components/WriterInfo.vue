@@ -13,6 +13,7 @@
       >
       </v-icon>
     </v-avatar>
+
     <div
       v-if="!props.disabled"
       :class="props.small ? 'info-small' : 'info-normal'"
@@ -25,7 +26,15 @@
         :to="routeTo"
       >
         {{ props.writer?.name }}
+        <span
+          v-if="props.showMySelf && currentUser.id == props.writer.id"
+          class="text-disabled"
+          style="font-size: 0.8em"
+        >
+          (본인)
+        </span>
       </custom-btn>
+
       <div class="d-flex align-center">
         <p class="pl-2">{{ date }}</p>
         <span v-if="props.views" class="px-2 text-disabled">•</span>
@@ -47,11 +56,26 @@ import CustomBtn from "./CustomBtn.vue";
 
 import { computed, defineProps } from "vue";
 import router, { pages } from "@/router";
+import { formatDateRelative } from "@/modules/utility";
+import { useSystemStore } from "@/store";
+import { storeToRefs } from "pinia";
+
+// Pinia storage
+const systemStore = useSystemStore();
+const { currentUser } = storeToRefs(systemStore);
 
 const routeTo = computed(() => {
   return { name: pages.UserInfo, params: { userId: props.writer?.id } };
 });
+const date = computed(() => {
+  try {
+    return formatDateRelative(props.date, { max_unit: "days" });
+  } catch (err) {
+    return props.date;
+  }
+});
 
+// Props
 const props = defineProps({
   writer: {
     Type: {
@@ -59,7 +83,10 @@ const props = defineProps({
       name: String,
     },
   },
-  date: String,
+  date: {
+    Type: String | Date,
+    default: new Date(),
+  },
   views: Number,
   disabled: {
     Type: Boolean,
@@ -68,6 +95,10 @@ const props = defineProps({
   small: {
     Type: Boolean,
     default: false,
+  },
+  showMySelf: {
+    Type: Boolean,
+    default: true,
   },
 });
 </script>

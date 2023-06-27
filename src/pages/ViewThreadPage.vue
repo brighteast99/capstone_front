@@ -13,8 +13,10 @@
     </template>
     게시글 목록
   </custom-btn>
+  <!-- Thread -->
 
-  <v-card class="mx-auto mb-5">
+  <v-card ref="threadArea" class="mx-auto mb-5">
+    <!-- Title & Info -->
     <v-card-title class="pa-5 pb-0">
       <span class="title">
         {{ thread.title }}<span class="board-name"> | {{ boardTitle }}</span>
@@ -44,140 +46,213 @@
       </dot-menu>
     </v-card-title>
 
+    <!-- Content -->
     <v-card-text class="py-0 px-3">
       <text-editor v-model="thread.content" :edit-mode="false" />
+      <recruitment-viewer
+        v-if="props.boardId != 5"
+        :loading="loadingRecruitments"
+        :error="failedLoadingRecruitments"
+        :recruitments="recruitments"
+        :owner="isUsersThread"
+      ></recruitment-viewer>
     </v-card-text>
 
     <v-card-actions class="pa-5">
+      <!-- Likes -->
       <custom-btn
         color="error"
-        :active="loggedIn && likes.state?.value"
+        :active="likes.state?.value"
+        prepend-icon="mdi-heart"
         @click="toggleLike"
       >
-        <v-icon icon="mdi-heart"></v-icon>
-        <template v-slot:append>
-          <div class="d-flex">
-            <span class="thread-action-counter ml-1">좋아요</span>
-            <v-slide-y-reverse-transition hide-on-leave>
-              <p v-if="likes.state?.value" class="thread-action-counter">
-                {{ likes.value + 1 }}
-              </p>
-            </v-slide-y-reverse-transition>
-            <v-slide-y-transition hide-on-leave>
-              <p v-if="!likes.state?.value" class="thread-action-counter">
-                {{ likes.value }}
-              </p>
-            </v-slide-y-transition>
-          </div>
-        </template>
+        <div class="d-flex">
+          <span class="thread-action-counter ml-1">좋아요</span>
+          <v-slide-y-reverse-transition hide-on-leave>
+            <p v-if="likes.state?.value" class="thread-action-counter">
+              {{ likes.value + 1 }}
+            </p>
+          </v-slide-y-reverse-transition>
+          <v-slide-y-transition hide-on-leave>
+            <p v-if="!likes.state?.value" class="thread-action-counter">
+              {{ likes.value }}
+            </p>
+          </v-slide-y-transition>
+        </div>
       </custom-btn>
+      <!-- Favorites -->
       <custom-btn
         color="warning"
-        :active="loggedIn && favorites.state?.value"
+        :active="favorites.state?.value || (isUsersThread && favorites.value)"
+        prepend-icon="mdi-star"
         @click="toggleFavorite"
       >
-        <v-icon icon="mdi-star"></v-icon>
-        <template v-slot:append>
-          <div class="d-flex">
-            <span class="thread-action-counter ml-1">관심</span>
-            <v-slide-y-reverse-transition hide-on-leave>
-              <p v-if="favorites.state?.value" class="thread-action-counter">
-                {{ favorites.value + favorites.state?.value }}
-              </p>
-            </v-slide-y-reverse-transition>
-            <v-slide-y-transition hide-on-leave>
-              <p v-if="!favorites.state?.value" class="thread-action-counter">
-                {{ favorites.value }}
-              </p>
-            </v-slide-y-transition>
-          </div>
-        </template>
+        <div class="d-flex">
+          <span class="thread-action-counter ml-1">관심</span>
+          <v-slide-y-reverse-transition hide-on-leave>
+            <p
+              v-if="!isUsersThread && favorites.state?.value"
+              class="thread-action-counter"
+            >
+              {{ favorites.value + favorites.state?.value }}
+            </p>
+          </v-slide-y-reverse-transition>
+          <v-slide-y-transition hide-on-leave>
+            <p
+              v-if="isUsersThread || !favorites.state?.value"
+              class="thread-action-counter"
+            >
+              {{ favorites.value }}
+            </p>
+          </v-slide-y-transition>
+        </div>
+        <v-tooltip v-if="isUsersThread" activator="parent">
+          관심 등록 현황 보기
+        </v-tooltip>
+      </custom-btn>
+      <v-spacer></v-spacer>
+      <custom-btn
+        v-if="threadHeight > netWindowHeight * 2"
+        size="small"
+        @click="scrollY"
+      >
+        맨 위로
+      </custom-btn>
+      <v-spacer></v-spacer>
+      <custom-btn
+        v-if="threadHeight > netWindowHeight * 2"
+        size="small"
+        @click="scrollY"
+      >
+        맨 위로
       </custom-btn>
     </v-card-actions>
   </v-card>
 
-  <v-card class="mx-auto mb-5 pa-3">
-    <v-card-title class="d-flex align-baseline">
-      <p class="comment-title">댓글&nbsp;</p>
-      <div class="d-flex align-center">
-        <v-icon
-          class="mr-1"
-          icon="mdi-comment-text-outline"
-          size="x-small"
-        ></v-icon>
-        {{ comments_count }}
-      </div>
+  <!-- Comments -->
+  <v-card ref="commentArea" class="mx-auto mb-5 pa-3">
+    <v-card-title class="d-flex align-center">
+      <p class="comment-title">댓글</p>
+
+      <v-icon
+        end
+        class="mr-1"
+        icon="mdi-comment-text-outline"
+        size="x-small"
+      ></v-icon>
+      {{ countActiveComment }}
+
+      <custom-btn size="small" @click="toggleComment()">
+        <span class="align-baseline">{{
+          displayComment ? "접기" : "펼치기"
+        }}</span>
+      </custom-btn>
     </v-card-title>
-    <v-card-text>
-      <comment-editor :threadId="props.threadId" @comment-created="addComments">
+
+    <v-card-text v-if="loggedIn">
+      <comment-editor :threadId="threadId" @comment-created="addComments">
       </comment-editor>
-
-      <v-divider class="my-3"></v-divider>
-
-      <div
-        v-if="isLoading"
-        class="d-flex flex-column text-h6 justify-center align-center text-disabled"
-        style="height: 150px"
-      >
-        <v-icon class="mdi-spin" icon="mdi-loading" size="50"> </v-icon>
-      </div>
-      <div
-        v-else-if="error"
-        class="d-flex align-center justify-center text-h6 text-center text-disabled"
-        style="height: 150px"
-      >
-        댓글을 불러오는 데 실패했습니다. <br />
-        나중에 다시 시도하거나 관리자에게 문의 바랍니다.
-      </div>
-      <div
-        v-else-if="!comments?.length"
-        class="d-flex align-center justify-center text-h6 text-center text-disabled"
-        style="height: 150px"
-      >
-        아직 댓글이 없습니다. <br />
-        첫 번째 댓글을 남겨보세요!
-      </div>
-
-      <div v-else>
-        <div v-for="comment in comments" :key="comment">
-          <comment-card
-            :comment="comment"
-            :threadId="props.threadId"
-            @updated="updateComments"
-            @deleted="deleteComment"
-            @reply-created="addComments"
-          >
-          </comment-card>
-          <comment-card
-            v-for="reply in comment.replies"
-            :key="reply"
-            :comment="reply"
-            @updated="updateComments"
-            @deleted="deleteComment"
-          >
-          </comment-card>
-          <v-divider class="my-2"></v-divider>
-        </div>
-      </div>
     </v-card-text>
+
+    <v-expand-transition>
+      <v-card-text v-if="displayComment" class="py-0">
+        <v-divider class="my-3"></v-divider>
+
+        <error-block
+          v-if="loadingComments || failedLoadingComments"
+          :loading="loadingComments"
+          height="150"
+        >
+          댓글을 불러오지 못했습니다. <br />
+          나중에 다시 시도하거나 관리자에게 문의 바랍니다.
+        </error-block>
+        <error-block v-else-if="!comments?.length" height="150">
+          아직 댓글이 없습니다. <br />
+          <span v-if="loggedIn">첫 번째 댓글을 남겨보세요!</span>
+        </error-block>
+
+        <div v-else>
+          <div v-for="comment in comments" :key="comment">
+            <comment-card
+              :comment="comment"
+              :threadId="threadId"
+              @updated="updateComments"
+              @deleted="deleteComment"
+              @reply-created="addComments"
+            >
+            </comment-card>
+            <comment-card
+              v-for="reply in comment.replies"
+              :key="reply"
+              :comment="reply"
+              @updated="updateComments"
+              @deleted="deleteComment"
+            >
+            </comment-card>
+            <v-divider class="my-2"></v-divider>
+          </div>
+        </div>
+      </v-card-text>
+    </v-expand-transition>
+    <v-expand-transition>
+      <v-card-actions
+        v-if="commentHeight > netWindowHeight * 2"
+        class="pa-0"
+        style="min-height: unset"
+      >
+        <v-spacer></v-spacer>
+        <custom-btn size="small" @click="scrollY(threadBottom - navHeight)">
+          맨 위로
+        </custom-btn>
+        <v-spacer></v-spacer>
+      </v-card-actions>
+    </v-expand-transition>
   </v-card>
+
+  <!-- Favorite user view -->
+  <user-peeker-dialog
+    v-if="isUsersThread"
+    v-model="favorites.state"
+    :list="favorites.users"
+    mode="FAVORITES"
+  ></user-peeker-dialog>
 </template>
 
 <script setup>
 import WriterInfo from "@/components/WriterInfo.vue";
+import DotMenu from "@/components/DotMenu.vue";
 import TextEditor from "@/components/TextEditor.vue";
 import CustomBtn from "@/components/CustomBtn.vue";
+import RecruitmentViewer from "@/components/RecruitmentViewer.vue";
 import CommentEditor from "@/components/CommentEditor.vue";
 import CommentCard from "@/components/CommentCard.vue";
+import userPeekerDialog from "@/components/UserPeekerDialog.vue";
+import ErrorBlock from "@/components/ErrorBlock.vue";
 
-import { ref, reactive, computed, defineProps, onBeforeMount } from "vue";
+import {
+  ref,
+  reactive,
+  computed,
+  defineProps,
+  watch,
+  onBeforeMount,
+} from "vue";
+import {
+  useDebounceFn,
+  useElementBounding,
+  useElementSize,
+  useWindowSize,
+  watchOnce,
+} from "@vueuse/core";
 import router, { pages } from "@/router";
+import { storeToRefs } from "pinia";
 import { useSystemStore, useModalStore } from "@/store";
 import {
   modalPresets,
   modalResponses,
   modalActions,
 } from "@/store/modal.store";
+import { constructQuery } from "@/modules/Services/queryBuilder";
 import { API, apiRequest, parseResponse, useAPI } from "@/modules/Services/API";
 import {
   countActiveComments,
@@ -185,17 +260,25 @@ import {
   formatDateRelative,
   parseJSON,
 } from "@/modules/utility";
-import { useDebounceFn } from "@vueuse/core";
-import { storeToRefs } from "pinia";
-import { constructQuery } from "@/modules/Services/queryBuilder";
-import DotMenu from "@/components/DotMenu.vue";
+
+// Components
+const threadArea = ref();
+const commentArea = ref();
 
 // Pinia storage
 const systemStore = useSystemStore();
-const { currentUser, loggedIn } = storeToRefs(systemStore);
+const { currentUser, loggedIn, navHeight } = storeToRefs(systemStore);
 const modalStore = useModalStore();
 
 // Data
+const { height: threadHeight, bottom: threadBottom } =
+  useElementBounding(threadArea);
+const { height: commentHeight } = useElementSize(commentArea);
+const { height: windowHeight } = useWindowSize();
+const netWindowHeight = computed(() => windowHeight.value - 70);
+const threadId = computed(
+  () => router.currentRoute.value.params.threadId ?? props.threadId
+);
 const boardTitle = ref("");
 const thread = reactive({
   title: "",
@@ -210,14 +293,21 @@ const isUsersThread = computed(() => systemStore.currentUser.id == writer.id);
 const views = ref(0);
 const likes = reactive({
   state: null,
-  value: null,
+  value: 0,
 });
 const favorites = reactive({
-  state: null,
-  value: null,
+  state: false,
+  value: 0,
+  users: [],
 });
+const recruitments = computed(() =>
+  fetchRecruitmentResponse.value?.data[API.GetRecruitments]
+    .filter((recruitment) => !recruitment.is_stopped)
+    .sort((a, b) => a.occupation.name.localeCompare(b.occupation.name))
+);
 const comments = reactive([]);
-const comments_count = computed(() => countActiveComments(comments));
+const countActiveComment = computed(() => countActiveComments(comments));
+const { value: displayComment, toggle: toggleComment } = createToggle(false);
 
 // Props
 const props = defineProps({
@@ -225,11 +315,36 @@ const props = defineProps({
   threadId: String,
 });
 
+// Watch
+watch(
+  () => router.currentRoute.value.params,
+  (params) => fetchData(params.threadId)
+);
+watchOnce(countActiveComment, (value) => {
+  if (value > 0) displayComment.value = true;
+});
+
 // Hooks
-const { isLoading, error, execute: fetchComments } = useAPI();
 onBeforeMount(() => {
-  new apiRequest()
-    .push(API.GetThread, { id: Number(props.threadId) }, [
+  fetchData();
+});
+
+// Methods
+const {
+  isLoading: loadingRecruitments,
+  error: failedLoadingRecruitments,
+  data: fetchRecruitmentResponse,
+  execute: fetchRecruitments,
+} = useAPI();
+const {
+  isLoading: loadingComments,
+  error: failedLoadingComments,
+  execute: fetchComments,
+} = useAPI();
+const fetchData = async () => {
+  // Fetch thread data
+  await new apiRequest()
+    .push(API.GetThread, { id: Number(threadId.value) }, [
       { user: ["id", "name"] },
       { board: "title" },
       "id",
@@ -240,12 +355,13 @@ onBeforeMount(() => {
       "date_updated",
       "views",
       "likes",
+      "favorites",
     ])
     .push(
       API.GetThreadActions,
       {
         user_id: Number(systemStore.currentUser.id),
-        thread_id: Number(props.threadId),
+        thread_id: Number(threadId.value),
       },
       ["is_like", "is_favorite"]
     )
@@ -258,7 +374,7 @@ onBeforeMount(() => {
 
       thread.title = threadData.title;
       thread.content = parseJSON(threadData.content);
-      thread.date += formatDateRelative(threadData.date_created, {
+      thread.date = formatDateRelative(threadData.date_created, {
         max_unit: "days",
         date_updated: threadData.date_updated,
       });
@@ -269,18 +385,66 @@ onBeforeMount(() => {
       likes.state = createToggle(actions?.is_like ?? false);
       likes.value = threadData.likes;
       if (likes.state.value) likes.value -= 1;
-      favorites.state = createToggle(actions?.is_favorite ?? false);
-      // TODO
-      favorites.value = 0;
-      // if (favorites.state.value) favorites.value -= 1;
+      favorites.value = threadData.favorites;
+      if (!isUsersThread.value) {
+        favorites.state = createToggle(actions?.is_favorite ?? false);
+        if (favorites.state.value) favorites.value -= 1;
+      } else favorites.state = false;
+      favorites.users.splice(0, favorites.users.length);
 
-      if (systemStore.readThread(props.threadId)) views.value += 1;
+      if (systemStore.readThread(threadId.value)) views.value += 1;
     });
 
+  // Fetch users who favorites this thread if the current user is the writer of the thread
+  if (writer.id == currentUser.value.id)
+    new apiRequest()
+      .execute(
+        API.GetThread,
+        { id: Number(threadId.value) },
+        {
+          actionforthread_set: ["is_favorite", { user: ["id", "name"] }],
+        }
+      )
+      .then(parseResponse)
+      .then((response) => {
+        favorites.users.push(
+          ...response[API.GetThread].actionforthread_set.filter(
+            (data) => data.is_favorite
+          )
+        );
+      });
+
+  // Fetch recruitments
+  await fetchRecruitments(
+    constructQuery({
+      name: API.GetRecruitments,
+      args: { thread_id: Number(threadId.value) },
+      fields: [
+        "id",
+        { occupation: ["name"] },
+        {
+          applyforrecruitment_set: [
+            "id",
+            { applicant: ["id", "name"] },
+            "result",
+            "memo",
+            "date_created",
+          ],
+        },
+        "current_cnt",
+        "max_cnt",
+        "is_closed",
+        "is_stopped",
+      ],
+    })
+  );
+
+  comments.splice(0, comments.length);
+  // Fetch comments
   fetchComments(
     constructQuery({
       name: API.GetComments,
-      args: { thread_id: Number(props.threadId) },
+      args: { thread_id: Number(threadId.value) },
       fields: [
         "id",
         { user: ["id", "name"] },
@@ -302,16 +466,16 @@ onBeforeMount(() => {
         { parent_comment: "id" },
       ],
     })
-  ).then(({ data: response }) => {
-    comments.push(
-      ...response.value.data[API.GetComments].filter(
-        (comment) => !comment.parent_comment
-      )
-    );
-  });
-});
-
-// Methods
+  )
+    .then(({ data: response }) => {
+      comments.push(
+        ...response.value.data[API.GetComments].filter(
+          (comment) => !comment.parent_comment
+        )
+      );
+    })
+    .finally(() => (displayComment.value = countActiveComment.value > 0));
+};
 const deleteThread = async () => {
   const response = await modalStore.openModal(
     "게시글을 삭제합니다.\n삭제된 글은 복구할 수 없습니다.",
@@ -323,11 +487,28 @@ const deleteThread = async () => {
   if (response === modalResponses.Cancel) return;
 
   new apiRequest()
-    .execute(API.DeleteThread, { id: Number(props.threadId) })
+    .execute(API.DeleteThread, { id: Number(threadId.value) })
     .then(parseResponse)
     .then((response) => {
       if (!response[API.DeleteThread])
         throw new Error("게시글을 삭제하지 못했습니다.");
+
+      const withdrawRecruitments = new apiRequest();
+
+      if (recruitments.value.length) {
+        for (const recruitment of recruitments.value)
+          withdrawRecruitments.push(API.WithdrawRecruitment, {
+            recruitment_id: Number(recruitment.id),
+          });
+
+        withdrawRecruitments
+          .send()
+          .then(parseResponse)
+          .then((response) => {
+            if (response[API.WithdrawRecruitment]) throw new Error();
+          })
+          .catch(() => console.log("failed to withdraw recruitments"));
+      }
 
       modalStore
         .openModal("게시글이 삭제되었습니다.", null, {
@@ -343,11 +524,12 @@ const deleteThread = async () => {
     })
     .catch(modalStore.showErrorMessage);
 };
+
 const updateLike = useDebounceFn(() => {
   new apiRequest()
     .execute(API.UpdateThreadActions, {
       user_id: Number(systemStore.currentUser.id),
-      thread_id: Number(props.threadId),
+      thread_id: Number(threadId.value),
       is_cancel: !likes.state?.value,
       option: "like",
     })
@@ -358,9 +540,15 @@ const updateLike = useDebounceFn(() => {
     })
     .catch(modalStore.showErrorMessage);
 }, 250);
-const toggleLike = () => {
+const toggleLike = async () => {
   if (!loggedIn.value) {
-    modalStore.showNeedLoginMessage();
+    const response = await modalStore.showNeedLoginMessage();
+
+    if (response === "Login")
+      router.push({
+        name: pages.Login,
+        query: { redirect: router.currentRoute.value.fullPath },
+      });
     return;
   }
 
@@ -371,7 +559,7 @@ const updateFavorite = useDebounceFn(() => {
   new apiRequest()
     .execute(API.UpdateThreadActions, {
       user_id: Number(systemStore.currentUser.id),
-      thread_id: Number(props.threadId),
+      thread_id: Number(threadId.value),
       is_cancel: !favorites.state?.value,
       option: "favorite",
     })
@@ -382,14 +570,24 @@ const updateFavorite = useDebounceFn(() => {
     })
     .catch(modalStore.showErrorMessage);
 }, 250);
-const toggleFavorite = () => {
+
+const toggleFavorite = async () => {
   if (!loggedIn.value) {
-    modalStore.showNeedLoginMessage();
+    const response = await modalStore.showNeedLoginMessage();
+
+    if (response === "Login")
+      router.push({
+        name: pages.Login,
+        query: { redirect: router.currentRoute.value.fullPath },
+      });
     return;
   }
 
-  favorites.state?.toggle();
-  updateFavorite();
+  if (isUsersThread.value) favorites.state = true;
+  else {
+    favorites.state?.toggle();
+    updateFavorite();
+  }
 };
 const addComments = (newComment) => {
   if (!newComment.parent_comment) {
@@ -430,6 +628,9 @@ const deleteComment = (id) => {
       }
   }
 };
+const scrollY = (amount = 0) => {
+  window.scrollTo({ top: window.scrollY + amount ?? 0, behavior: "smooth" });
+};
 </script>
 
 <style scoped>
@@ -453,9 +654,5 @@ const deleteComment = (id) => {
 
 .comment-title {
   font-size: 1.2em;
-}
-.comment-counter {
-  font-size: 1em;
-  padding-left: 0.2em;
 }
 </style>

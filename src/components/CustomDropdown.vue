@@ -221,7 +221,6 @@ const scrollToSelected = async () => {
   align-items: first baseline;
 }
 .prepend-icon {
-  padding-left: 4px;
   transition: all 0.1s;
 }
 .prepend-inner-icon {

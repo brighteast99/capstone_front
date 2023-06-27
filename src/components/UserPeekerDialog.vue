@@ -23,8 +23,7 @@
             @click="currentGroup = null"
           >
             {{
-              "전체 보기" +
-              (newApplications[0] ? ` (${newApplications[0]})` : "")
+              `전체 보기 ${newApplications[0] ? `(${newApplications[0]})` : ""}`
             }}
           </custom-btn>
           <custom-btn
@@ -37,19 +36,23 @@
             @click="currentGroup = group.id"
           >
             {{
-              group.occupation.name +
-              (newApplications[i + 1] ? ` (${newApplications[i + 1]})` : "")
+              `${group.occupation.name} ${
+                newApplications[i + 1] ? `(${newApplications[i + 1]})` : ""
+              }`
             }}
           </custom-btn>
         </v-card-text>
         <v-card-actions style="min-height: unset">
           <v-switch
+            v-if="props.mode == 'EVALUATION'"
             v-model="includeEvaluated"
             density="compact"
             color="primary"
             hide-details
-            label="확인한 지원 포함"
           >
+            <template v-slot:label>
+              <span style="font-size: 0.85em"> 취소 ・ 거절 포함 </span>
+            </template>
           </v-switch>
         </v-card-actions>
       </v-card>
@@ -63,7 +66,7 @@
         }"
       >
         <v-card-title class="modal-title">
-          {{ useGroupView ? "지원 현황" : "관심을 표시한 유저" }}
+          {{ titleText }}
         </v-card-title>
 
         <v-divider></v-divider>
@@ -72,43 +75,47 @@
           class="pt-2 px-1 modal-content"
           style="background-color: #fafafa"
         >
-          <error-block v-if="!list.length">
+          <error-block v-if="!displayList.length">
             <span style="font-size: 0.8em">
-              {{
-                `아직 ${
-                  useGroupView ? "지원자" : "관심 등록한 유저"
-                }가 없습니다.`
-              }}
+              {{ emptyText }}
             </span>
           </error-block>
           <div v-else>
-            <div v-for="item in list" :key="item" class="d-flex flex-column">
-              <v-card class="ma-1 pa-2" elevation="2">
-                <v-expand-transition>
-                  <v-card-title
-                    v-if="currentGroup == 0"
-                    class="py-0"
-                    style="font-size: 1em; min-height: unset"
-                  >
-                    {{ item.occupation }}
-                  </v-card-title>
-                </v-expand-transition>
-
+            <div
+              v-for="item in displayList"
+              :key="item"
+              class="d-flex flex-column"
+            >
+              <v-card
+                class="ma-1 pa-2"
+                elevation="2"
+                :style="{
+                  backgroundColor:
+                    item.result == null ||
+                    item.result == 'PASS' ||
+                    item.result == 'APPLY'
+                      ? 'white'
+                      : '#f0f0f0',
+                }"
+              >
                 <v-card-text class="px-1 py-2">
                   <div class="d-flex align-center w-100">
                     <writer-info
                       :writer="item[user]"
-                      :date="item.date"
+                      :date="item.date_created"
                       :small="true"
+                      :showMySelf="props.mode != 'HISTORY'"
                     ></writer-info>
                     <v-spacer></v-spacer>
                     <v-btn
-                      size="small"
+                      v-if="props.mode != 'HISTORY'"
+                      size="x-small"
                       :color="
                         selectedUser == item[user].id ? 'error' : 'primary'
                       "
                       variant="outlined"
                       :active="selectedUser == item[user].id"
+                      style="font-size: 0.8em"
                       @click="toggleUser(item[user].id)"
                     >
                       {{
@@ -119,77 +126,145 @@
                     </v-btn>
                   </div>
                 </v-card-text>
-                <v-card-actions
-                  v-if="item?.result"
-                  class="d-flex align-center justify-center pt-3 pb-0"
-                  style="min-height: unset"
-                >
-                  <div
-                    v-if="item.result == 'APPLY'"
-                    class="d-flex w-100 align-center justify-center"
+                <v-expand-transition>
+                  <v-card-actions
+                    v-if="props.mode == 'FAVORITES'"
+                    class="d-flex align-center justify-center pt-3 pb-0"
+                    style="min-height: unset"
                   >
-                    <v-spacer></v-spacer>
-                    <custom-btn
-                      color="secondary"
-                      variant="flat"
-                      width="50%"
-                      @click="evaluateApplication(item, true)"
-                    >
-                      수락
-                    </custom-btn>
-                    <v-spacer></v-spacer>
-                    <custom-btn
-                      color="error"
-                      variant="flat"
-                      width="50%"
-                      :active="tobeDeleted == item.id"
-                      @click="
-                        if (tobeDeleted == item.id) tobeDeleted = null;
-                        else tobeDeleted = item.id;
-                      "
-                    >
-                      거절
-                    </custom-btn>
-                    <v-spacer></v-spacer>
-                  </div>
-                  <error-block v-else height="24">
-                    <span v-if="item.result == 'CANCEL'" class="text-disabled">
-                      지원 취소
-                    </span>
-                    <span
-                      v-else-if="item.result == 'PASS'"
-                      class="text-primary"
-                    >
-                      참여중
-                    </span>
-                    <span v-else-if="item.result == 'FAIL'" class="text-error">
-                      거절함
-                    </span>
-                  </error-block>
-                </v-card-actions>
+                    <custom-btn size="medium"> 참여 제의 </custom-btn>
+                  </v-card-actions>
+                  <v-card-actions
+                    v-else-if="
+                      (props.mode != 'CREW' || !currentGroup) && item?.result
+                    "
+                    class="d-flex align-center justify-center pt-3 pb-0"
+                    style="min-height: unset"
+                  >
+                    <error-block height="24">
+                      <div v-if="props.mode != 'CREW'">
+                        <div v-if="item.result == 'APPLY'">
+                          <div v-if="props.mode == 'EVALUATION'" class="d-flex">
+                            <custom-btn
+                              color="secondary"
+                              width="50%"
+                              @click="evaluateApplication(item, true)"
+                            >
+                              수락
+                            </custom-btn>
+                            <v-spacer></v-spacer>
+                            <custom-btn
+                              color="error"
+                              width="50%"
+                              :active="tobeDeleted == item.id"
+                              @click="
+                                if (tobeDeleted == item.id) tobeDeleted = null;
+                                else tobeDeleted = item.id;
+                              "
+                            >
+                              거절
+                            </custom-btn>
+                          </div>
+                          <span v-else class="text-secondary"> 지원 접수 </span>
+                        </div>
+                        <span
+                          v-if="item.result == 'CANCEL'"
+                          class="text-disabled"
+                        >
+                          지원 취소
+                        </span>
+                        <span
+                          v-else-if="item.result == 'PASS'"
+                          class="text-primary"
+                        >
+                          참여중
+                        </span>
+                        <span
+                          v-else-if="item.result == 'FAIL'"
+                          class="text-error"
+                        >
+                          {{ props.mode == "EVALUATION" ? "거절함" : "거절됨" }}
+                          <span
+                            v-if="item?.memo"
+                            style="font-size: 0.7em; cursor: pointer"
+                          >
+                            <v-icon
+                              icon="mdi-email-alert-outline"
+                              size="small"
+                            ></v-icon>
+                            <v-menu activator="parent" location="right">
+                              <v-card
+                                class="text-center"
+                                density="compact"
+                                style="width: 15rem"
+                              >
+                                <v-card-title class="py-2">
+                                  거절 사유
+                                </v-card-title>
+                                <v-divider></v-divider>
+                                <v-card-text
+                                  style="background-color: #fcfcfc"
+                                  :class="{ 'text-disabled': !item.memo }"
+                                >
+                                  {{ item?.memo }}
+                                </v-card-text>
+                              </v-card>
+                            </v-menu>
+                          </span>
+                        </span>
+                      </div>
+                      <span
+                        v-if="props.mode != 'FAVORITES' && currentGroup == null"
+                        :style="{
+                          fontSize: props.mode == 'CREW' ? '0.9em' : '0.7em',
+                        }"
+                        :class="{
+                          'text-black': props.mode == 'CREW',
+                        }"
+                      >
+                        {{
+                          props.mode == "CREW"
+                            ? item.occupation
+                            : ` (${item.occupation})`
+                        }}
+                      </span>
+                    </error-block>
+                  </v-card-actions>
+                </v-expand-transition>
               </v-card>
+
               <v-expand-transition>
                 <v-card
-                  v-if="useGroupView && tobeDeleted == item.id"
+                  v-if="props.mode == 'EVALUATION' && tobeDeleted == item.id"
                   class="mx-1"
                 >
-                  <v-card-text class="pb-0">
-                    <v-text-field
+                  <v-card-text class="pb-0 position-relative">
+                    <v-textarea
                       v-model="memo"
-                      label="거절 사유(선택)"
+                      label="거절 사유(100자 이내, 생략 가능)"
                       color="primary"
                       variant="underlined"
                       density="compact"
                       hide-details
+                      noResize
+                      rows="6"
+                      :rules="[() => validMemo]"
                     >
-                    </v-text-field>
+                    </v-textarea>
+                    <span
+                      class="text-disabled"
+                      :class="{ 'text-error': !validMemo }"
+                      style="position: absolute; bottom: 0; right: 1.2em"
+                    >
+                      {{ `${memo.length} / 100` }}
+                    </span>
                   </v-card-text>
                   <v-card-actions style="min-height: unset">
                     <v-btn
                       block
                       color="error"
                       size="small"
-                      @click="evaluateApplication(item, false)"
+                      @click="if (validMemo) evaluateApplication(item, false);"
                     >
                       거절 확인
                     </v-btn>
@@ -237,6 +312,7 @@ import { watch } from "vue";
 import { apiRequest, parseResponse } from "@/modules/Services/API";
 import { API } from "@/modules/Services/API";
 import { useModalStore } from "@/store/modal.store";
+import { escapeString } from "@/modules/utility";
 
 // Pinia storage
 const modalStore = useModalStore();
@@ -245,11 +321,39 @@ const modalStore = useModalStore();
 const mv = useVModel(props, "modelValue", emits);
 const expanded = ref(false);
 const useGroupView = computed(() => props.groups != null);
-const user = computed(() => (useGroupView.value ? "applicant" : "user"));
+const titleText = computed(() => {
+  switch (props.mode) {
+    case "FAVORITES":
+      return "관심을 표시한 유저";
+    case "EVALUATION":
+      return "지원자 현황";
+    case "HISTORY":
+      return "나의 지원 기록";
+    case "CREW":
+      return "팀원 현황";
+    default:
+      return "";
+  }
+});
+const emptyText = computed(() => {
+  switch (props.mode) {
+    case "FAVORITES":
+      return "아직 관심을 표시한 유저가 없습니다";
+    case "EVAULATION":
+      return "아직 지원자가 없습니다";
+    case "HISTORY":
+      return "지원한 적 없는 프로젝트입니다";
+    case "CREW":
+      return "아직 팀원이 없습니다";
+    default:
+      return "";
+  }
+});
+const user = computed(() => (props.mode == "FAVORITES" ? "user" : "applicant"));
 const currentGroup = ref();
 const includeEvaluated = ref(false);
-const list = computed(() => {
-  if (!useGroupView.value) return props.users;
+const displayList = computed(() => {
+  if (!useGroupView.value) return props.list;
 
   let selectedGroup;
   if (!currentGroup.value)
@@ -266,16 +370,40 @@ const list = computed(() => {
       (group) => group.id == currentGroup.value
     ).applyforrecruitment_set;
 
-  if (includeEvaluated.value) return selectedGroup;
-  else
-    return selectedGroup.filter((application) => application.result == "APPLY");
+  return selectedGroup.filter((application) => {
+    if (includeEvaluated.value) return true;
+    else {
+      switch (props.mode) {
+        case "EVALUATION":
+          return application.result == "APPLY" || application.result == "PASS";
+        case "HISTORY":
+          return true;
+        case "CREW":
+          return application.result == "PASS";
+        default:
+          return true;
+      }
+    }
+  });
 });
 const newApplications = computed(() => {
   const newForEachGroups = props.groups.map(
     (group) =>
-      group.applyforrecruitment_set.filter(
-        (application) => application.result == "APPLY"
-      ).length
+      group.applyforrecruitment_set.filter((application) => {
+        if (includeEvaluated.value) return true;
+        else {
+          switch (props.mode) {
+            case "EVALUATION":
+              return (
+                application.result == "APPLY" || application.result == "PASS"
+              );
+            case "CREW":
+              return application.result == "PASS";
+            default:
+              return true;
+          }
+        }
+      }).length
   );
   const total = newForEachGroups.reduce((accum, current) => accum + current);
   return [total, ...newForEachGroups];
@@ -283,6 +411,8 @@ const newApplications = computed(() => {
 
 const selectedUser = ref();
 const tobeDeleted = ref();
+const memo = ref("");
+const validMemo = computed(() => memo.value.length <= 100 || "");
 
 // Props & Emits
 const props = defineProps({
@@ -290,12 +420,12 @@ const props = defineProps({
     Type: Boolean,
     default: false,
   },
-  users: {
+  list: {
     Type: [
       {
         id: Number | String,
         user: { id: Number | String, name: String },
-        date: String,
+        date_created: Date | String,
         result: String,
         recruitment: {
           id: Number | String,
@@ -328,19 +458,29 @@ const props = defineProps({
     Type: Number | String,
     default: null,
   },
+  mode: String,
 });
 const emits = defineEmits(["update:modelValue"]);
 
 // Watches
 watch(mv, (value) => {
-  if (value && useGroupView.value) {
-    currentGroup.value = props.selectedGroup ?? props.groups[0].id;
-    selectedUser.value = list.value[0]?.[user.value].id;
-  }
+  if (value && props.mode != "HISTORY")
+    selectedUser.value = displayList.value[0]?.[user.value].id;
 });
 watch(
   currentGroup,
-  () => (selectedUser.value = list.value[0]?.[user.value].id),
+  () => {
+    if (props.mode != "HISTORY")
+      selectedUser.value = displayList.value[0]?.[user.value].id;
+  },
+  { immediate: true }
+);
+watch(
+  includeEvaluated,
+  () => {
+    if (props.mode != "HISTORY")
+      selectedUser.value = displayList.value[0]?.[user.value].id;
+  },
   { immediate: true }
 );
 watch(
@@ -362,16 +502,21 @@ const toggleUser = (id) => {
 const evaluateApplication = (application, result) => {
   const evalResult = result ? "pass" : "fail";
 
+  let data = {
+    id: Number(application.id),
+    result: evalResult,
+  };
+  if (!result && memo.value) data.memo = escapeString(memo.value);
+
   new apiRequest()
-    .execute(API.EvalApplication, {
-      id: Number(application.id),
-      result: evalResult,
-    })
+    .execute(API.EvalApplication, data)
     .then(parseResponse)
     .then((result) => {
       if (result[API.EvalApplication]) {
         application.result = evalResult.toUpperCase();
+        application.meno = memo.value;
         tobeDeleted.value = null;
+        memo.value = "";
       } else throw new Error();
     })
     .catch(modalStore.showErrorMessage);
@@ -405,7 +550,7 @@ const evaluateApplication = (application, result) => {
   width: 12rem;
   min-width: 12rem;
   height: 60dvh;
-  transition: all 0.2s;
+  transition: all 0.3s;
   border-top-right-radius: 0;
   border-bottom-right-radius: 0;
 }
@@ -421,7 +566,7 @@ const evaluateApplication = (application, result) => {
 .list {
   width: 18rem;
   min-width: 18rem;
-  height: 20rem;
+  height: 30rem;
   display: flex;
   flex-direction: column;
   transition: all 0.2s;
@@ -450,6 +595,7 @@ const evaluateApplication = (application, result) => {
   height: 100%;
   padding: 0 0 0.5em 0;
   overflow: scroll;
+  overflow-x: scroll;
 }
 
 .modal-title {

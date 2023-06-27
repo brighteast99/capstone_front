@@ -1,7 +1,7 @@
 <template>
   <v-card class="profile-card" :loading="loadingUserData">
     <dot-menu v-if="isMyInfo" size="small" @click="editInfo">
-      <custom-btn>프로필 수정</custom-btn>
+      <custom-btn :to="{ name: pages.EditUserInfo }">프로필 수정</custom-btn>
     </dot-menu>
     <v-container>
       <v-row>
@@ -12,14 +12,19 @@
           </v-avatar>
         </v-col>
         <v-col style="min-width: fit-content">
-          <h1 class="userinfo-name">{{ userInfo.name }}</h1>
+          <h1 class="userinfo-name">
+            {{ userInfo.name }}
+            <v-chip v-if="userInfo.occupation" color="primary" label>
+              {{ userInfo.occupation }}
+            </v-chip>
+          </h1>
           <p class="userinfo-email">{{ userInfo.email }}</p>
           <p class="userinfo-date">{{ registerDate }}</p>
         </v-col>
       </v-row>
     </v-container>
   </v-card>
-  <v-card class="mt-3">
+  <v-card class="mt-3" style="min-width: 480px">
     <v-tabs v-model="tab" grow color="primary">
       <v-tab :value="tabs.portfolio">포트폴리오</v-tab>
       <v-tab :value="tabs.recruits">진행한 프로젝트</v-tab>
@@ -29,44 +34,118 @@
     <v-divider></v-divider>
     <v-window v-model="tab">
       <v-window-item :value="tabs.portfolio">
-        <error-block height="200">
-          아직 포트폴리오를 등록하지 않았습니다.
+        <error-block
+          v-if="loadingPortfolio || failedLoadingPortfolio || !portfolio"
+          :loading="loadingPortfolio"
+          height="200"
+        >
+          <span v-if="failedLoadingPortfolio">
+            포트폴리오를 불러오지 못했습니다.
+          </span>
+          <span v-else> 아직 포트폴리오를 등록하지 않았습니다. </span>
         </error-block>
+        <div v-else class="pa-5">
+          <p
+            v-if="portfolio.introduction"
+            class="pb-10"
+            style="font-size: 1.2em; font-weight: 500"
+          >
+            {{ portfolio.introduction }}
+          </p>
+          <div v-if="links.length">
+            <p style="font-size: 1.2em; font-weight: 500">외부 링크</p>
+            <ul class="ml-5">
+              <li v-for="link in links" :key="link">
+                <a
+                  :href="formatLink(link.link)"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  {{ link.link }}
+                </a>
+              </li>
+            </ul>
+          </div>
+        </div>
       </v-window-item>
+
       <v-window-item :value="tabs.recruits">
         <error-block
-          v-if="loadingUsersThreads || failedLoadingUsersThreads"
+          v-if="
+            loadingUsersThreads ||
+            failedLoadingUsersThreads ||
+            !usersThreads.length
+          "
           :loading="loadingUsersThreads"
           height="200"
         >
-          목록을 불러오지 못했습니다.<br />
-          나중에 다시 시도하거나 관리자에게 문의 바랍니다.
+          <span v-if="failedLoadingUsersThreads">
+            진행한 프로젝트 목록을 불러오지 못했습니다.<br />
+            나중에 다시 시도하거나 관리자에게 문의 바랍니다.
+          </span>
+          <span v-else> 아직 진행한 프로젝트가 없습니다. </span>
         </error-block>
-        <div v-else-if="usersThreads.length" class="thread-list">
+        <div v-else class="thread-list">
           <div v-for="thread in usersThreads" :key="thread">
             <thread-peeker :thread="thread"></thread-peeker>
             <v-divider class="mx-1 my-1"></v-divider>
           </div>
         </div>
-        <error-block v-else height="200">
-          아직 진행한 프로젝트가 없습니다.
-        </error-block>
       </v-window-item>
+
       <v-window-item :value="tabs.participations">
-        <error-block height="200">
-          아직 참여한 프로젝트가 없습니다.
+        <error-block
+          v-if="
+            loadingParticipations ||
+            failedLoadingParticipations ||
+            !participations.length
+          "
+          :loading="loadingParticipations"
+          height="200"
+        >
+          <span v-if="failedLoadingParticipations">
+            참여한 프로젝트 목록을 불러오지 못했습니다.<br />
+            나중에 다시 시도하거나 관리자에게 문의 바랍니다.
+          </span>
+          <span v-else> 아직 참여한 프로젝트가 없습니다. </span>
         </error-block>
+        <div v-else class="thread-list">
+          <div
+            v-for="recruitment in participations"
+            :key="recruitment"
+            class="position-relative"
+          >
+            <thread-peeker :thread="recruitment.thread"></thread-peeker>
+            <div
+              class="text-center py-3"
+              style="position: absolute; top: 0; width: 100%; font-size: 1em"
+            >
+              <v-chip v-if="!isMyInfo" color="primary" size="small">
+                {{ `${recruitment.occupation.name}로 참여` }}
+              </v-chip>
+            </div>
+            <v-divider class="mx-1 my-1"></v-divider>
+          </div>
+        </div>
       </v-window-item>
+
       <v-window-item :value="tabs.favorites">
         <error-block
-          v-if="loadingFavoriteThreads || failedLoadingFavoriteThreads"
+          v-if="
+            loadingFavoriteThreads ||
+            failedLoadingFavoriteThreads ||
+            !favoriteThreads.length
+          "
           :loading="loadingFavoriteThreads"
           height="200"
         >
-          목록을 불러오지 못했습니다.<br />
-          나중에 다시 시도하거나 관리자에게 문의 바랍니다.
+          <span v-if="failedLoadingFavoriteThreads">
+            관심 프로젝트 목록을 불러오지 못했습니다.<br />
+            나중에 다시 시도하거나 관리자에게 문의 바랍니다.
+          </span>
+          <span v-else> 아직 관심 등록한 프로젝트가 없습니다. </span>
         </error-block>
-        <div v-else-if="favoriteThreads.length" class="thread-list">
+        <div v-else class="thread-list">
           <div
             v-for="(thread, i) in favoriteThreads"
             :key="thread"
@@ -81,9 +160,6 @@
             <v-divider class="mx-1 my-1"></v-divider>
           </div>
         </div>
-        <error-block v-else height="200">
-          아직 관심 등록한 프로젝트가 없습니다.
-        </error-block>
       </v-window-item>
     </v-window>
   </v-card>
@@ -104,10 +180,11 @@ import {
   onBeforeMount,
 } from "vue";
 import { apiRequest, API, parseResponse, useAPI } from "@/modules/Services/API";
-import router, { safeBack } from "@/router";
+import router, { pages, safeBack } from "@/router";
 import { useModalStore, useSystemStore } from "@/store";
-import { formatDateRelative } from "@/modules/utility";
+import { formatDateRelative, formatLink } from "@/modules/utility";
 import { constructQuery } from "@/modules/Services/queryBuilder";
+import { watchTriggerable } from "@vueuse/core";
 
 // Pinia storage
 const systemStore = useSystemStore();
@@ -138,13 +215,22 @@ const tabs = {
 };
 Object.freeze(tabs);
 const tab = ref(tabs.portfolio);
-const usersThreads = computed(() => {
-  return (
+const portfolio = computed(
+  () => portfolioResponse.value?.data[API.GetPortfolio]
+);
+const links = reactive([]);
+const usersThreads = computed(
+  () =>
     usersThreadsResponse.value?.data[API.GetUser].thread_set.filter(
       (thread) => !thread.is_deleted
     ) || []
-  );
-});
+);
+const participations = computed(
+  () =>
+    participationResponse.value?.data[API.UsersApplications]
+      .filter((application) => application.result == "PASS")
+      .map((application) => application.recruitment) || []
+);
 const favoriteThreads = reactive([]);
 
 // Props
@@ -153,23 +239,38 @@ const props = defineProps({
 });
 
 // Watches
-watch(tab, (value) => {
+const { trigger: InitInfo } = watchTriggerable(tab, (value) => {
   switch (value) {
     case tabs.portfolio: {
+      if (
+        (!loadingPortfolio.value && !loadedPortfolio.value) ||
+        failedLoadingPortfolio.value
+      )
+        fetchPortfolio();
       break;
     }
     case tabs.recruits: {
-      if (!loadingUsersThreads.value && !loadedUsersThreads.value)
+      if (
+        (!loadingUsersThreads.value && !loadedUsersThreads.value) ||
+        failedLoadingUsersThreads.value
+      )
         fetchUsersThreads();
       break;
     }
-    case tabs.paricipations: {
+    case tabs.participations: {
+      if (
+        (!loadingParticipations.value && !loadedParticipations.value) ||
+        failedLoadingParticipations.value
+      )
+        fetchParticipations();
       break;
     }
     case tabs.favorites: {
-      if (!loadingFavoriteThreads.value && !loadedFavoriteThreads.value) {
+      if (
+        (!loadingFavoriteThreads.value && !loadedFavoriteThreads.value) ||
+        failedLoadingFavoriteThreads.value
+      )
         fetchFavoriteThreads();
-      }
       break;
     }
   }
@@ -182,18 +283,11 @@ watch(
   { immediate: true }
 );
 watch(
-  () => router.currentRoute.value.params.userId,
+  userId,
   () => {
     fetchUserData();
     tab.value = tabs.portfolio;
-  },
-  { immedaite: true }
-);
-watch(
-  () => props.userId,
-  () => {
-    fetchUserData();
-    tab.value = tabs.portfolio;
+    InitInfo();
   },
   { immedaite: true }
 );
@@ -201,6 +295,7 @@ watch(
 // Hook
 onBeforeMount(() => {
   fetchUserData();
+  InitInfo();
 });
 
 // Methods
@@ -210,22 +305,63 @@ const {
   execute: _fetchUserData,
 } = useAPI();
 const fetchUserData = () => {
+  loadedPortfolio.value = false;
   loadedUsersThreads.value = false;
+  loadedParticipations.value = false;
   loadedFavoriteThreads.value = false;
 
   _fetchUserData(
     constructQuery({
       name: API.GetUser,
       args: { id: Number(userId.value) },
-      fields: ["id", "name", "email", "date_created"],
+      fields: ["id", "name", "email", "date_created", "occupation"],
     })
   )
     .then(parseResponse)
     .then((response) => {
       if (!response[API.GetUser]) throw new Error("유저를 찾을 수 없습니다.");
     })
-    .catch((err) => modalStore.showErrorMessage(err).then(() => safeBack()));
+    .catch((err) => {
+      console.log(err);
+      modalStore.showErrorMessage(err).then(() => safeBack());
+    });
 };
+
+const {
+  isLoading: loadingPortfolio,
+  error: failedLoadingPortfolio,
+  isFinished: loadedPortfolio,
+  data: portfolioResponse,
+  execute: _fetchPortfolio,
+} = useAPI({
+  onSuccess: ({ data: response }) => {
+    if (!response[API.GetPortfolio]) {
+      failedLoadingUsersThreads.value = true;
+      return;
+    }
+
+    new apiRequest()
+      .execute(
+        API.GetLinks,
+        { portfolio_id: Number(response[API.GetPortfolio].id) },
+        "link"
+      )
+      .then(parseResponse)
+      .then((response) =>
+        links.splice(0, links.length, ...response[API.GetLinks])
+      );
+  },
+});
+const fetchPortfolio = () => {
+  _fetchPortfolio(
+    constructQuery({
+      name: API.GetPortfolio,
+      args: { user_id: Number(userId.value) },
+      fields: ["id", "introduction"],
+    })
+  );
+};
+
 const {
   isLoading: loadingUsersThreads,
   error: failedLoadingUsersThreads,
@@ -234,7 +370,6 @@ const {
   execute: _fetchUsersThreads,
 } = useAPI({
   onSuccess: ({ data: response }) => {
-    console.log(response);
     if (!response[API.GetUser]) {
       failedLoadingUsersThreads.value = true;
       return;
@@ -259,9 +394,61 @@ const fetchUsersThreads = () => {
             "views",
             "likes",
             "favorites",
+            "occupation",
             { commentforthread_set: ["is_deleted", { replies: "is_deleted" }] },
           ],
         },
+      ],
+    })
+  );
+};
+
+const {
+  isLoading: loadingParticipations,
+  error: failedLoadingParticipations,
+  isFinished: loadedParticipations,
+  data: participationResponse,
+  execute: _fetchParticipations,
+} = useAPI({
+  onSuccess: ({ data: response }) => {
+    if (!response[API.UsersApplications]) {
+      failedLoadingParticipations.value = true;
+      return;
+    }
+  },
+});
+const fetchParticipations = () => {
+  _fetchParticipations(
+    constructQuery({
+      name: API.UsersApplications,
+      args: { user_id: Number(userId.value) },
+      fields: [
+        {
+          recruitment: [
+            {
+              thread: [
+                "id",
+                { board: "id" },
+                { user: ["id", "name"] },
+                "is_deleted",
+                "title",
+                "content",
+                "date_created",
+                "views",
+                "likes",
+                "favorites",
+                {
+                  commentforthread_set: [
+                    "is_deleted",
+                    { replies: "is_deleted" },
+                  ],
+                },
+              ],
+            },
+            { occupation: "name" },
+          ],
+        },
+        "result",
       ],
     })
   );
@@ -274,7 +461,7 @@ const {
   execute: _fetchFavoriteThreads,
 } = useAPI({
   onSuccess: ({ data: response }) =>
-    favoriteThreads.push(...response[API.GetFavorites]),
+    favoriteThreads.splice(...response[API.GetFavorites]),
 });
 const fetchFavoriteThreads = () => {
   favoriteThreads.splice(0, favoriteThreads.length);
@@ -323,7 +510,8 @@ const cancelFavorite = (idx) => {
 <style scoped>
 .profile-card {
   margin-top: 40px;
-  padding: 1.5em 2em 1.5em 2em;
+  min-width: 480px;
+  padding: 1.5em 2.5% 1.5em 2.5%;
 }
 
 .edit-btn {

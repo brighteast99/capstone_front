@@ -50,11 +50,11 @@
     <v-card-text class="py-0 px-3">
       <text-editor v-model="thread.content" :edit-mode="false" />
       <recruitment-viewer
+        v-if="props.boardId != 5"
         :loading="loadingRecruitments"
         :error="failedLoadingRecruitments"
         :recruitments="recruitments"
         :owner="isUsersThread"
-        @chip:click="recruitInfoClicked($event)"
       ></recruitment-viewer>
     </v-card-text>
 
@@ -213,15 +213,8 @@
   <user-peeker-dialog
     v-if="isUsersThread"
     v-model="favorites.state"
-    :users="favorites.users"
-  ></user-peeker-dialog>
-
-  <!-- Applicantion view -->
-  <user-peeker-dialog
-    v-if="isUsersThread"
-    v-model="showApplicants"
-    :groups="recruitments"
-    :selected-group="selectedRecruitment"
+    :list="favorites.users"
+    mode="FAVORITES"
   ></user-peeker-dialog>
 </template>
 
@@ -249,6 +242,7 @@ import {
   useElementBounding,
   useElementSize,
   useWindowSize,
+  watchOnce,
 } from "@vueuse/core";
 import router, { pages } from "@/router";
 import { storeToRefs } from "pinia";
@@ -311,8 +305,6 @@ const recruitments = computed(() =>
     .filter((recruitment) => !recruitment.is_stopped)
     .sort((a, b) => a.occupation.name.localeCompare(b.occupation.name))
 );
-const selectedRecruitment = ref();
-const showApplicants = ref(false);
 const comments = reactive([]);
 const countActiveComment = computed(() => countActiveComments(comments));
 const { value: displayComment, toggle: toggleComment } = createToggle(false);
@@ -328,6 +320,9 @@ watch(
   () => router.currentRoute.value.params,
   (params) => fetchData(params.threadId)
 );
+watchOnce(countActiveComment, (value) => {
+  if (value > 0) displayComment.value = true;
+});
 
 // Hooks
 onBeforeMount(() => {
@@ -407,26 +402,15 @@ const fetchData = async () => {
         API.GetThread,
         { id: Number(threadId.value) },
         {
-          actionforthread_set: [
-            "is_favorite",
-            { user: ["id", "name"] },
-            "date_updated",
-          ],
+          actionforthread_set: ["is_favorite", { user: ["id", "name"] }],
         }
       )
       .then(parseResponse)
       .then((response) => {
         favorites.users.push(
-          ...response[API.GetThread].actionforthread_set
-            .filter((data) => data.is_favorite)
-            .map((data) => {
-              return {
-                user: { id: data.user.id, name: data.user.name },
-                date: formatDateRelative(data.date_updated, {
-                  max_unit: "days",
-                }),
-              };
-            })
+          ...response[API.GetThread].actionforthread_set.filter(
+            (data) => data.is_favorite
+          )
         );
       });
 
@@ -443,6 +427,7 @@ const fetchData = async () => {
             "id",
             { applicant: ["id", "name"] },
             "result",
+            "memo",
             "date_created",
           ],
         },
@@ -538,11 +523,6 @@ const deleteThread = async () => {
         );
     })
     .catch(modalStore.showErrorMessage);
-};
-const recruitInfoClicked = (recruitment) => {
-  if (!isUsersThread?.value) return;
-  selectedRecruitment.value = recruitment.id;
-  showApplicants.value = true;
 };
 
 const updateLike = useDebounceFn(() => {

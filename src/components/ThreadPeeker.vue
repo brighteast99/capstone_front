@@ -59,7 +59,7 @@
     </v-card-text>
     <v-card-text class="pa-0">
       <recruitment-viewer
-        v-if="!props.thread.is_deleted"
+        v-if="!props.thread.is_deleted && props.thread.board.id != 5"
         :loading="isLoading"
         :error="error"
         :owner="currentUser.id == props.thread.user.id"
@@ -156,6 +156,7 @@ const props = defineProps({
       date_created: Date | String,
       views: Number | String,
       likes: Number | String,
+      favorites: Number | String,
       commentforthread_set: {
         is_deleted: Boolean,
         replies: [
@@ -193,6 +194,7 @@ const fetchRecruitments = () => {
             "id",
             { applicant: ["id", "name"] },
             "result",
+            "memo",
             "date_created",
           ],
         },
